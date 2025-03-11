@@ -1,0 +1,79 @@
+/* 🔹 จัดหน้า Main Page */
+.main-container {
+    text-align: center;
+    padding: 20px;
+  }
+  
+  .blockly-container {
+    width: 100%;
+    height: 600px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  /* 🔹 ปรับขนาดของพื้นที่ทำงาน */
+  .blockly-workspace {
+    width: 90%;
+    height: 550px;
+    border: 1px solid #ccc;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* 🔹 ปรับ Flyout Background ให้เท่ากับ Workspace */
+  .blocklyFlyoutBackground {
+    fill: #f0f0f0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  /* 🔹 ป้องกันการขยายเกินขอบเขต */
+  .blocklySvg {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  /* 🔹 ซ่อน Scrollbar ที่ไม่จำเป็น */
+  ::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+    display: none;
+  }
+
+  .blocklyFlyoutBackground {
+    fill: #f0f0f0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  /* 🔹 ปุ่ม Generate และ Logout */
+  .generate-btn, .logout-btn {
+    margin: 10px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  .generate-btn {
+    background-color: #007BFF;
+    color: white;
+  }
+  
+  .generate-btn:hover {
+    background-color: #0056b3;
+  }
+  
+  .logout-btn {
+    background-color: red;
+    color: white;
+  }
+  
+  .logout-btn:hover {
+    background-color: darkred;
+  }
+  
