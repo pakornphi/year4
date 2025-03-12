@@ -35,35 +35,67 @@ const Login = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-left">
-        <img src="/logo.png" alt="Logo" className="login-logo" />
+      <div className="body">
+        <div className="container">
+        <div className="form-box login">
+          <form className="form" action="">
+            <h1>Login</h1>
+            <div className="input-box">
+              <input type="text" 
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required/>
+              <i className="bx bxs-user"></i>
+            </div>
+            <div className="input-box">
+              <input type="password" 
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required/>
+              <i className="bx bxs-lock-alt"></i>
+            </div>
+            <button type="submit">Login</button>
+            <p>Not have an account? <a href="/register">register here</a></p>
+          </form>
+        </div>
+        </div>
       </div>
 
-      <div className="login-right">
-        <h2>Login</h2>
-        {error && <p className="error-message">{error}</p>}
-        <form onSubmit={handleLogin} className="login-form">
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <button type="submit">Login</button>
-        </form>
-        <p>Not have an account? <a href="/register">register here</a></p>
-      </div>
-    </div>
-  );
-};
+    );
+  };
+//     <div className="login-container">
+//       <div className="login-left">
+//         <img src="/logo.png" alt="Logo" className="login-logo" />
+//       </div>
+
+//       <div className="login-right">
+//         <h2>Login</h2>
+//         {error && <p className="error-message">{error}</p>}
+//         <form onSubmit={handleLogin} className="login-form">
+//           <div className="input-box">
+//             <input
+//             type="text"
+//             placeholder="Username"
+//             value={username}
+//             onChange={(e) => setUsername(e.target.value)}
+//             required/>
+//             <i className="bx bx-user"></i>
+//           </div>
+//           <input
+//             type="password"
+//             placeholder="Password"
+//             value={password}
+//             onChange={(e) => setPassword(e.target.value)}
+//             required
+//           />
+//           <button type="submit">Login</button>
+//         </form>
+//         <p>Not have an account? <a href="/register">register here</a></p>
+//       </div>
+//     </div>
+//   );
+// };
 
 export default Login;

@@ -12,6 +12,7 @@
     "bcryptjs": "^3.0.2",
     "blockly": "^11.2.1",
     "blocky": "^0.0.1",
+    "boxicons": "^2.1.4",
     "cors": "^2.8.5",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.3",
