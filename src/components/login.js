@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom"; // ✅ ใช้ React Router
-import "../styles.css"; // Import CSS
+import "../login.css"; // Import CSS
 
 const Login = () => {
   const [username, setUsername] = useState("");
