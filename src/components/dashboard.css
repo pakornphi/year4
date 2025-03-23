@@ -1,0 +1,81 @@
+/* ✅ จัดหน้า Dashboard */
+.dashboard-container {
+    padding: 20px;
+    text-align: center;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+  }
+  
+  /* ✅ ชื่อหัวข้อ */
+  .dashboard-title {
+    font-size: 28px;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  /* ✅ ปุ่มกลับ */
+  .back-button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 20px;
+  }
+  
+  .back-button:hover {
+    background-color: #0056b3;
+  }
+  
+  /* ✅ ส่วนของผลลัพธ์ */
+  .results-table {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+  }
+  
+  /* ✅ การ์ดของผลลัพธ์ */
+  .result-card {
+    width: 300px;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: left;
+  }
+  
+  /* ✅ สีเขียวเมื่อทดสอบผ่าน */
+  .result-card.pass {
+    background-color: #d4edda;
+    border-left: 6px solid #28a745;
+  }
+  
+  /* ✅ สีแดงเมื่อทดสอบไม่ผ่าน */
+  .result-card.fail {
+    background-color: #f8d7da;
+    border-left: 6px solid #dc3545;
+  }
+  
+  /* ✅ กรณีไม่มีผลลัพธ์ */
+  .no-results {
+    font-size: 18px;
+    color: #dc3545;
+    font-weight: bold;
+    margin-top: 20px;
+  }
+  
+/* ✅ ปุ่มล้างผลลัพธ์ */
+.clear-button {
+    background-color: #dc3545;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 10px;
+  }
+  
+  .clear-button:hover {
+    background-color: #a71d2a;
+  }
