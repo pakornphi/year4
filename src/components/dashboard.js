@@ -1,54 +1,75 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./dashboard.css"; // ✅ Import CSS
+import "./dashboard.css";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [results, setResults] = useState([]);
+  const [resultsByUrl, setResultsByUrl] = useState({});
+  const [selectedUrl, setSelectedUrl] = useState("");
 
   useEffect(() => {
-    // ✅ ดึงผลลัพธ์จาก LocalStorage ทุกครั้งที่โหลดหน้า
-    const storedResults = JSON.parse(localStorage.getItem("csrfResults")) || [];
-    
-    console.log("📢 Loaded CSRF Test Results:", storedResults);
+    const rawResults = JSON.parse(localStorage.getItem("csrfResults")) || [];
+    const grouped = {};
 
-    setResults(storedResults);
+    rawResults.forEach(result => {
+      const [url, message] = result.split(" → ");
+      if (!grouped[url]) grouped[url] = [];
+      grouped[url].push(message);
+    });
+
+    setResultsByUrl(grouped);
+    const firstUrl = Object.keys(grouped)[0];
+    setSelectedUrl(firstUrl || "");
   }, []);
 
-  // ✅ ฟังก์ชันล้างผลลัพธ์
   const clearResults = () => {
-    localStorage.removeItem("csrfResults"); // ✅ ลบผลลัพธ์ CSRF
-    localStorage.removeItem("testResults"); // ✅ ลบข้อมูลที่ใช้ Generate Code
-    setResults([]); // ✅ อัปเดต UI ให้ว่าง
-  
-    // ✅ ตรวจสอบว่า token ยังอยู่
-    const token = localStorage.getItem("token");
-    if (!token) {
-      localStorage.setItem("token", "your_token_value"); // 🛑 ใส่ค่าเดิมถ้าหาย
-    }
+    localStorage.removeItem("csrfResults");
+    localStorage.removeItem("testResults");
+    setResultsByUrl({});
+    setSelectedUrl("");
   };
-  
-  return (
-    <div className="dashboard-container">
-      <h1 className="dashboard-title">🔍 CSRF Test Results</h1>
-      <button className="back-button" onClick={() => {navigate("/main");}}>⬅️ Back to Main</button>
-      <button className="clear-button" onClick={clearResults}>🗑️ Clear Results</button>
 
-      {results.length > 0 ? (
-        <div className="results-table">
-          {results.map((result, index) => {
-            const isPassed = result.includes("successful");
-            return (
-              <div key={index} className={`result-card ${isPassed ? "pass" : "fail"}`}>
-                <p><strong>🛡️ URL:</strong> {result.split(" → ")[0]}</p>
-                <p><strong>📌 Test Result:</strong> {result.split(" → ")[1]}</p>
-              </div>
-            );
-          })}
+  return (
+    <div className="dashboard-layout">
+      {/* ✅ Sidebar URL List */}
+      <div className="sidebar">
+        <h3>🔗 URLs</h3>
+        {Object.keys(resultsByUrl).map(url => (
+          <button
+            key={url}
+            className={`url-button ${url === selectedUrl ? "active" : ""}`}
+            onClick={() => setSelectedUrl(url)}
+          >
+            {url}
+          </button>
+        ))}
+      </div>
+
+      {/* ✅ Main Content */}
+      <div className="dashboard-main">
+        <div className="dashboard-header">
+          <h1>🧪 CSRF Test Results</h1>
+          <div>
+            <button onClick={() => navigate("/main")}>⬅️ Back</button>
+            <button onClick={clearResults}>🗑️ Clear</button>
+          </div>
         </div>
-      ) : (
-        <p className="no-results">⚠️ No results available. Please generate code first.</p>
-      )}
+
+        {selectedUrl && resultsByUrl[selectedUrl] ? (
+          <div className="results-table">
+            {resultsByUrl[selectedUrl].map((msg, idx) => {
+              const isPassed = msg.toLowerCase().includes("successful");
+              return (
+                <div key={idx} className={`result-card ${isPassed ? "pass" : "fail"}`}>
+                  <p><strong>📌 Test Result:</strong> {msg}</p>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="no-results">⚠️ No results available for this URL.</p>
+        )}
+      </div>
     </div>
   );
 };

@@ -1,81 +1,167 @@
-/* ✅ จัดหน้า Dashboard */
+/* dashboard.css */
+
 .dashboard-container {
-    padding: 20px;
-    text-align: center;
-    background-color: #f8f9fa;
-    min-height: 100vh;
-  }
-  
-  /* ✅ ชื่อหัวข้อ */
-  .dashboard-title {
-    font-size: 28px;
-    color: #333;
-    margin-bottom: 20px;
-  }
-  
-  /* ✅ ปุ่มกลับ */
-  .back-button {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-bottom: 20px;
-  }
-  
-  .back-button:hover {
-    background-color: #0056b3;
-  }
-  
-  /* ✅ ส่วนของผลลัพธ์ */
-  .results-table {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 15px;
-  }
-  
-  /* ✅ การ์ดของผลลัพธ์ */
-  .result-card {
-    width: 300px;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    text-align: left;
-  }
-  
-  /* ✅ สีเขียวเมื่อทดสอบผ่าน */
-  .result-card.pass {
-    background-color: #d4edda;
-    border-left: 6px solid #28a745;
-  }
-  
-  /* ✅ สีแดงเมื่อทดสอบไม่ผ่าน */
-  .result-card.fail {
-    background-color: #f8d7da;
-    border-left: 6px solid #dc3545;
-  }
-  
-  /* ✅ กรณีไม่มีผลลัพธ์ */
-  .no-results {
-    font-size: 18px;
-    color: #dc3545;
-    font-weight: bold;
-    margin-top: 20px;
-  }
-  
-/* ✅ ปุ่มล้างผลลัพธ์ */
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  font-family: "Segoe UI", sans-serif;
+}
+
+.dashboard-title {
+  text-align: center;
+  font-size: 28px;
+  color: #1a5bbf;
+  margin-bottom: 20px;
+}
+
+.back-button,
 .clear-button {
-    background-color: #dc3545;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-left: 10px;
-  }
-  
-  .clear-button:hover {
-    background-color: #a71d2a;
-  }
+  padding: 10px 20px;
+  margin: 10px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.back-button {
+  background-color: #4caf50;
+  color: white;
+}
+
+.back-button:hover {
+  background-color: #3e8e41;
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.clear-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.clear-button:hover {
+  background-color: #d32f2f;
+}
+
+.results-table {
+  margin-top: 20px;
+  display: grid;
+  gap: 20px;
+}
+
+.result-card {
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  transition: 0.3s ease;
+}
+
+.result-card.pass {
+  background-color: #e0f7e9;
+  border-left: 6px solid #2ecc71;
+}
+
+.result-card.fail {
+  background-color: #fdecea;
+  border-left: 6px solid #e74c3c;
+}
+
+.result-card p {
+  margin: 6px 0;
+  font-size: 16px;
+}
+
+.no-results {
+  margin-top: 40px;
+  text-align: center;
+  color: #999;
+  font-size: 18px;
+}
+
+.dashboard-actions {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.pagination-buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+
+.pagination-buttons button {
+  padding: 8px 16px;
+  background-color: #1a5bbf;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.pagination-buttons button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Styles for the dashboard */
+.dashboard-layout {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #f2f2f2;
+  padding: 20px;
+  border-right: 1px solid #ccc;
+}
+
+.url-button {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: white;
+  border: 1px solid #ccc;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.url-button:hover,
+.url-button.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.results-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.result-card {
+  padding: 15px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.no-results {
+  color: red;
+}

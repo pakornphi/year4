@@ -1,75 +1,125 @@
-/* 🔹 แบ่งหน้า Login ออกเป็น 2 ฝั่ง */
+
+
 .login-container {
+  width: 1100px;
+  height: 570px;
+  margin: 50px auto;
   display: flex;
-  height: 100vh;
-  width: 100%;
+  border-radius: 25px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  background-color: white;
 }
 
-/* 🔹 ฝั่งซ้าย (โลโก้) */
+/* ฝั่งซ้าย */
 .login-left {
-  flex: 1;
-  background-color: #007BFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.login-logo {
   width: 50%;
-  max-width: 200px;
-}
-
-/* 🔹 ฝั่งขวา (Login Form) */
-.login-right {
-  flex: 1;
+  background-color: #6d94f3;
+  color: white;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: #ffffff;
+  border-radius: 0 30% 30% 0;
+}
+
+.login-left h2 {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.login-left p {
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.register-btn {
+  background: white;
+  color: #6d94f3;
+  border: none;
+  padding: 10px 25px;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  
+}
+
+.register-btn:hover {
+  background-color: white;
+  color: #6d94f3;
+}
+
+/* ฝั่งขวา */
+.login-right {
+  width: 50%;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .login-right h2 {
+  font-size: 28px;
   margin-bottom: 20px;
-  font-size: 24px;
-  color: #333;
 }
 
-/* 🔹 ฟอร์ม Login */
 .login-form {
   width: 100%;
-  max-width: 350px;
+  max-width: 300px;
   display: flex;
   flex-direction: column;
+  gap: 15px;
+}
+
+.input-group {
+  position: relative;
+  display: flex;
   align-items: center;
 }
 
-.login-form input {
+.input-group input {
   width: 100%;
-  padding: 10px;
-  margin: 10px 0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 16px;
+  padding: 12px 40px 12px 15px;
+  border-radius: 10px;
+  border: none;
+  background-color: #f0f0f0;
+  font-size: 15px;
 }
 
-.login-form button {
-  width: 100%;
-  padding: 10px;
-  background-color: #084200;
+.input-group .icon {
+  position: absolute;
+  right: 15px;
+  color: #666;
+}
+
+button[type="submit"] {
+  background-color: #6d94f3;
   color: white;
+  padding: 12px;
+  font-weight: bold;
   border: none;
-  border-radius: 5px;
-  font-size: 18px;
+  border-radius: 10px;
   cursor: pointer;
   transition: 0.3s;
 }
 
-.login-form button:hover {
-  background-color: #0056b3;
+button[type="submit"]:hover {
+  background-color: #4b78e1;
 }
 
-/* 🔹 ข้อความแจ้ง Error */
+.register-link {
+  color: #6d94f3;
+  text-decoration: none;
+  font-weight: bold;
+  margin-top: 10px;
+  display: inline-block;
+}
+
+.register-link:hover {
+  text-decoration: underline;
+}
+
 .error-message {
   color: red;
   font-size: 14px;

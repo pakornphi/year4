@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../register.css"; // Import CSS
+import "../register.css";
+import { FaUser, FaLock, FaEnvelope } from "react-icons/fa";
 
 const Register = () => {
   const [username, setUsername] = useState("");
@@ -26,13 +27,17 @@ const Register = () => {
       return;
     }
 
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+    if (!passwordRegex.test(password)) {
+      setError("Password must be at least 6 characters long, contain a number, an uppercase letter, and a special character.");
+      return;
+    }
+
     try {
       const response = await fetch("http://localhost:8000/api/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, email, password, confirmPassword }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password }),
       });
 
       const data = await response.json();
@@ -47,48 +52,61 @@ const Register = () => {
 
   return (
     <div className="register-container">
-      {/* 🔹 ฝั่งซ้าย: โลโก้ */}
+      {/* 🔹 ฝั่งซ้าย: Register Form */}
       <div className="register-left">
-        <img src="/logo.png" alt="Logo" className="register-logo" />
-      </div>
-
-      {/* 🔹 ฝั่งขวา: Register Form */}
-      <div className="register-right">
-        <h2>Register</h2>
+        <h2>Registration</h2>
         {error && <p className="error-message">{error}</p>}
         {success && <p className="success-message">{success}</p>}
         <form onSubmit={handleRegister} className="register-form">
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
+          <div className="input-group">
+            <FaUser className="icon" />
+            <input
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </div>
+          <div className="input-group">
+            <FaEnvelope className="icon" />
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="input-group">
+            <FaLock className="icon" />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="input-group">
+            <FaLock className="icon" />
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
           <button type="submit">Register</button>
         </form>
-        <p>Already have an account? <a href="/login">Login here</a></p>
+      </div>
+
+      {/* 🔹 ฝั่งขวา: Welcome Back Panel */}
+      <div className="register-right">
+        <h2>Welcome Back!</h2>
+        <p>Already have an account?</p>
+        <button className="switch-button" onClick={() => navigate("/login")}>Login</button>
       </div>
     </div>
   );

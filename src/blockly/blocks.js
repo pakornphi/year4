@@ -37,7 +37,7 @@ Blockly.Blocks["check_sql_injection"] = {
     this.setColour(0);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setTooltip("Check for SQL Injection vulnerabilities.");
+    this.setTooltip("ตรวจสอบช่องโหว่ SQL Injection เช่นการป้อนโค้ด SQL ผ่านแบบฟอร์มเพื่อดึง/แก้ไขข้อมูลจากฐานข้อมูล");
   },
 };
 
@@ -48,7 +48,7 @@ Blockly.Blocks["check_xss"] = {
     this.setColour(120);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setTooltip("Check for Cross-Site Scripting (XSS) vulnerabilities.");
+    this.setTooltip("ตรวจสอบช่องโหว่ Cross-Site Scripting (XSS) ที่ผู้โจมตีอาจแทรก JavaScript ลงในหน้าเว็บ");
   },
 };
 
@@ -56,10 +56,10 @@ Blockly.Blocks["check_xss"] = {
 Blockly.Blocks["check_csrf"] = {
   init: function () {
     this.appendDummyInput().appendField("Check CSRF");
+    this.setColour(180);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(180);
-    this.setTooltip("Check for Cross-Site Request Forgery (CSRF) vulnerabilities.");
+    this.setTooltip("ตรวจสอบว่ามีการป้องกัน Cross-Site Request Forgery (CSRF) หรือไม่ เช่น CSRF Token");
   },
 };
 
@@ -70,7 +70,7 @@ Blockly.Blocks["check_idor"] = {
     this.setColour(260);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setTooltip("Check for Insecure Direct Object References (IDOR) vulnerabilities.");
+    this.setTooltip("ตรวจสอบ Insecure Direct Object References เช่น การเข้าถึงข้อมูลคนอื่นผ่าน URL โดยไม่ตรวจสอบสิทธิ์");
   },
 };
 
@@ -81,6 +81,7 @@ Blockly.Blocks["check_broken_access"] = {
     this.setColour(300);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setTooltip("Check for Broken Access Control vulnerabilities.");
+    this.setTooltip("ตรวจสอบการควบคุมสิทธิ์ในการเข้าถึง เช่น เข้าถึงหน้าแอดมินโดยไม่ได้รับอนุญาต");
   },
 };
+Blockly.Tooltip.DELAY = 250;
