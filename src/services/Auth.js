@@ -87,19 +87,19 @@ router.post("/login", async (req, res) => {
 });
 
 // 🔹 API: Get Profile (ต้องมี JWT Token)
-router.get("/profile", authenticateToken, async (req, res) => {
-  try {
-    const userResult = await pool.query("SELECT id, email FROM users WHERE id = $1", [req.user.userId]);
+// router.get("/profile", authenticateToken, async (req, res) => {
+//   try {
+//     const userResult = await pool.query("SELECT id, email FROM users WHERE id = $1", [req.user.userId]);
 
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
+//     if (userResult.rows.length === 0) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
 
-    res.json(userResult.rows[0]);
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).send("Server error");
-  }
-});
+//     res.json(userResult.rows[0]);
+//   } catch (error) {
+//     console.error(error.message);
+//     res.status(500).send("Server error");
+//   }
+// });
 
 module.exports = router;

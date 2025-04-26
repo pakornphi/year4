@@ -109,21 +109,21 @@ const authenticateToken = (req, res, next) => {
 };
 
 // 🔹 API: Get Profile (ใช้ JWT Token)
-router.get("/profile", authenticateToken, async (req, res) => {
-  try {
-    const { userId } = req.user;
-    const userResult = await pool.query("SELECT id, username, email FROM register WHERE id = $1", [userId]);
+// router.get("/profile", authenticateToken, async (req, res) => {
+//   try {
+//     const { userId } = req.user;
+//     const userResult = await pool.query("SELECT id, username, email FROM register WHERE id = $1", [userId]);
 
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
+//     if (userResult.rows.length === 0) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
 
-    res.json(userResult.rows[0]);
+//     res.json(userResult.rows[0]);
 
-  } catch (error) {
-    console.error("❌ ERROR:", error);
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
-  }
-});
+//   } catch (error) {
+//     console.error("❌ ERROR:", error);
+//     res.status(500).json({ message: "Internal Server Error", error: error.message });
+//   }
+// });
 
 module.exports = router;
