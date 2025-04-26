@@ -14,11 +14,11 @@ const Main = () => {
   const workspace = useRef(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("⚠️ You must be logged in to access this page.");
-      navigate("/login");
-    }
+    // const token = localStorage.getItem("token");
+    // if (!token) {
+    //   alert("⚠️ You must be logged in to access this page.");
+    //   navigate("/login");
+    // }
 
     if (workspace.current) {
       workspace.current.dispose();

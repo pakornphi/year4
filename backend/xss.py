@@ -21,11 +21,10 @@ class XSSTester:
         self,
         base_url,
         payload_file,
-        dom_payload_file=None,  # Optional DOM-specific payload file
         timeout=5,
         cooldown=1,
         max_redirects=0,
-        workers=10
+        workers=5
     ):
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
@@ -35,10 +34,11 @@ class XSSTester:
 
         # Load payloads from the given file
         self.payloads = self._read_payloads(payload_file)
-        self.dom_payloads = self._read_payloads(dom_payload_file) if dom_payload_file else []
+
+        # Load DOM-specific payloads from 'payloaddom.txt'
+        self.dom_payloads = self._read_payloads('payloaddom.txt')  # Fixed file name
         logging.info(f"Loaded {len(self.payloads)} payloads from '{payload_file}'")
-        if dom_payload_file:
-            logging.info(f"Loaded {len(self.dom_payloads)} DOM payloads from '{dom_payload_file}'")
+        logging.info(f"Loaded {len(self.dom_payloads)} DOM payloads from 'payloaddom.txt'")
 
         # Configure session with increased pool size
         self.session = requests.Session()
@@ -222,29 +222,33 @@ class XSSTester:
         return False
 
     def test_dom_xss(self):
-        parsed = urlparse(self.base_url)
-        qs = parse_qs(parsed.query)
-        qs['dom'] = self.dom_payload  # Use separate DOM payload
-        url = urlunparse((parsed.scheme, parsed.netloc,
-                          parsed.path, '', urlencode(qs, doseq=True), ''))
-        options = Options()
-        options.headless = True
-        try:
-            driver = webdriver.Chrome(options=options)
-            driver.get(url)
-            time.sleep(self.timeout)
-            vulnerable = self.dom_payload in driver.page_source
-            if vulnerable:
-                logging.warning("dom_xss vulnerable on: dom")
-        except Exception as e:
-            logging.error(f"dom_xss error: {e}")
-            vulnerable = False
-        finally:
+        # Use DOM payload from the 'payloaddom.txt' file
+        for dom_payload in self.dom_payloads:
+            parsed = urlparse(self.base_url)
+            qs = parse_qs(parsed.query)
+            qs['dom'] = dom_payload
+            url = urlunparse((parsed.scheme, parsed.netloc,
+                              parsed.path, '', urlencode(qs, doseq=True), ''))
+            options = Options()
+            options.headless = True
             try:
-                driver.quit()
-            except:
-                pass
-        return vulnerable
+                driver = webdriver.Chrome(options=options)
+                driver.get(url)
+                time.sleep(self.timeout)
+                vulnerable = dom_payload in driver.page_source
+                if vulnerable:
+                    logging.warning("dom_xss vulnerable on: dom")
+            except Exception as e:
+                logging.error(f"dom_xss error: {e}")
+                vulnerable = False
+            finally:
+                try:
+                    driver.quit()
+                except:
+                    pass
+            if vulnerable:
+                return True
+        return False
 
     def _run_single(self, method, payload):
         self.payload = payload
@@ -294,8 +298,6 @@ if __name__ == '__main__':
     parser.add_argument('url', help="Base URL to test, including any query string")
     parser.add_argument('--payload-file', '-f', required=True,
                         help="Path to payload file (defines PAYLOADS list)")
-    parser.add_argument('--dom-payload-file', '-d', 
-                        help="Path to DOM-specific payload file (defines PAYLOADS list for DOM-based XSS)")
     parser.add_argument('--timeout', type=int, default=3,
                         help="HTTP timeout in seconds")
     parser.add_argument('--cooldown', type=float, default=0.5,
@@ -307,7 +309,6 @@ if __name__ == '__main__':
     tester = XSSTester(
         base_url=args.url,
         payload_file=args.payload_file,
-        dom_payload_file=args.dom_payload_file,  # Pass in DOM payload file
         timeout=args.timeout,
         cooldown=args.cooldown,
         workers=args.workers
