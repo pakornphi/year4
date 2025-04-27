@@ -11,36 +11,33 @@ CORS(app)  # Enable CORS for frontend-backend communication
 # CSRF Tester class is used in this route
 @app.route('/api/test-csrf', methods=['POST'])
 def test_csrf():
-    data = request.get_json()
-    target_url = data.get('url')
+    data = request.get_json()  # Get the JSON data from the POST request
+    base_url = data.get('url')  # The URL to test
 
-    if not target_url:
-        return jsonify({'error': 'URL is required'}), 400
+    if not base_url:
+        return jsonify({"error": "URL is required"}), 400
 
-    try:
-        tester = CSRFTester(
-            base_url=target_url,
-            csrf_field='csrf_token',
-            form_selector='form',
-            endpoints=['/', '/login'],
-            timeout=5.0,
-            headers={'User-Agent': 'BackPy-CSRF-Tester/1.0'},
-            max_retries=2
-        )
-        
-        # Run all tests
-        tester.run_all()
+    # Initialize the CSRFTester with the provided base_url
+    tester = CSRFTester(base_url=base_url)
 
-        # Prepare results
-        results = {
-            name: {'vulnerable': vuln, 'info': info} 
-            for name, (vuln, info) in tester.results.items()
+    # Run the CSRF tests
+    results = tester.run_all()
+
+    # Initialize result_data with the tested URL
+    result_data = {
+        "tested_url": base_url  # Include the URL in the response data
+    }
+
+    # Add results for each test
+    for name, (vuln, info) in results.items():
+        result_data[name] = {
+            "vulnerability": vuln,
+            "info": info
         }
 
-        return jsonify({'results': results})
-    
-    except Exception as e:
-        return jsonify({'error': f'CSRF test failed: {str(e)}'}), 500
+    # Return the test results as a JSON response
+    return jsonify(result_data)
+
 
 # XSS Tester class is used in this route
 @app.route('/api/test-xss', methods=['POST'])

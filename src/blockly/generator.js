@@ -62,7 +62,7 @@ javascriptGenerator.forBlock["check_xss"] = function () {
   return `  check_xss(url);\n`;
 };
 
-// ✅ ทดสอบช่องโหว่ CSRF (เรียก Flask API)
+// Example for the CSRF Block: Fetch URL from the array and test
 javascriptGenerator.forBlock["check_csrf"] = function () {
   return `
   urls.forEach(url => {
