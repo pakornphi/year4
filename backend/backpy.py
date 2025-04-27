@@ -1,9 +1,12 @@
 from flask import Flask, request, jsonify
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 from flask_cors import CORS
 from csrf2 import CSRFTester  # Assuming CSRFTester is in csrf_tester.py
 from xss import XSSTester
 from sql import SQLInjectionTester  # Import SQLInjectionTester from sql.py
 import logging
+import requests
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend-backend communication
@@ -98,6 +101,66 @@ def test_sql_injection():
 
     except Exception as e:
         return jsonify({'error': f'SQL Injection test failed: {str(e)}'}), 500
+    
+# ✅ API ดึง href ที่มี parameter
+@app.route('/api/fetch-links', methods=['POST'])
+def fetch_links():
+    data = request.get_json()
+    target_url = data.get('url')
+
+    if not target_url:
+        return jsonify({'error': 'URL is required'}), 400
+
+    try:
+        response = requests.get(target_url, timeout=10)
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+        links = soup.find_all('a', href=True)
+
+        param_links = []
+        for link in links:
+            href = link['href']
+            if '?' in href:
+                full_url = urljoin(target_url, href)
+                param_links.append(full_url)
+
+        if not param_links:
+            return jsonify({"message": "❌ No links with parameters found."}), 404
+
+        return jsonify({"param_links": param_links})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ✅ API fetch content ของหน้าแบบ proxy
+@app.route('/api/fetch-page-content', methods=['POST'])
+def fetch_page_content():
+    data = request.get_json()
+    target_url = data.get('url')
+
+    try:
+        response = requests.get(target_url, timeout=5)
+
+        # อย่า raise_for_status() เด็ดขาด ให้ตอบกลับ HTML แม้ว่าเป็น 404
+        return jsonify({"html": response.text, "status_code": response.status_code})
+    except Exception as e:
+        return jsonify({"html": "", "error": str(e)}), 200  # ตอบ 200 กลับเสมอ
+
+# ✅ API test IDOR (optional)
+@app.route('/api/test-idor', methods=['POST'])
+def test_idor():
+    data = request.get_json()
+    url = data.get('url')
+
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+
+        return jsonify({'results': [f"✅ Successfully fetched {url}"]})
+
+    except Exception as e:
+        return jsonify({'results': [f"❌ Failed to fetch {url}: {str(e)}"]}), 500
 
 
 if __name__ == '__main__':
