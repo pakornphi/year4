@@ -1,6 +1,5 @@
 import { javascriptGenerator } from "blockly/javascript";
 
-
 // ✅ แปลง Block `set_url` เป็นตัวแปร URLs
 javascriptGenerator.forBlock["set_url"] = function (block) {
   const mainUrl = `"${block.getFieldValue("URL")}"`;
@@ -22,7 +21,6 @@ javascriptGenerator.forBlock["set_url"] = function (block) {
   });
   `;
 };
-
 
 // ✅ แปลง Block `add_url` เป็นตัวแปร URL
 javascriptGenerator.forBlock["add_url"] = function (block) {
@@ -56,13 +54,31 @@ javascriptGenerator.forBlock["check_sql_injection"] = function (block) {
   `;
 };
 
-
 // ✅ ทดสอบช่องโหว่ XSS
 javascriptGenerator.forBlock["check_xss"] = function () {
-  return `  check_xss(url);\n`;
+  return `
+    fetch('http://localhost:5000/api/test-xss', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url: url })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.results) {
+        console.log("XSS Test Result:", data);
+      } else {
+        console.log("No XSS vulnerabilities found.");
+      }
+    })
+    .catch(error => {
+      console.error('Error while testing for XSS:', error);
+    });
+  `;
 };
 
-// Example for the CSRF Block: Fetch URL from the array and test
+// ✅ ทดสอบช่องโหว่ CSRF
 javascriptGenerator.forBlock["check_csrf"] = function () {
   return `
   urls.forEach(url => {
@@ -73,10 +89,10 @@ javascriptGenerator.forBlock["check_csrf"] = function () {
     })
     .then(response => response.json())
     .then(data => {
-      console.log("✅ CSRF Test Result for", url, ":", data.results);
-      
+      console.log("✅ CSRF Test Result for", url, ":", data);
+
       let results = JSON.parse(localStorage.getItem("testResults")) || [];
-      const resultString = "🔍 " + url + " → " + JSON.stringify(data.results);
+      const resultString = "🔍 " + url + " → " + JSON.stringify(data);
       if (!results.includes(resultString)) {
         results.push(resultString);
       }
@@ -87,10 +103,11 @@ javascriptGenerator.forBlock["check_csrf"] = function () {
       const resultContainer = document.getElementById("test-results");
       const resultItem = document.createElement("div");
       resultItem.className = "test-result-item";
-      resultItem.innerHTML = "<strong>" + url + "</strong><br>" + JSON.stringify(data.results);
+      resultItem.innerHTML = "<strong>" + url + "</strong><br>" + JSON.stringify(data);
       resultContainer.appendChild(resultItem);
     })
     .catch(error => {
+      console.error('Error during CSRF test:', error);
     });
   });
   `;
@@ -98,10 +115,40 @@ javascriptGenerator.forBlock["check_csrf"] = function () {
 
 // ✅ ทดสอบช่องโหว่ IDOR
 javascriptGenerator.forBlock["check_idor"] = function () {
-  return `  check_idor(url);\n`;
+  return `
+    fetch('http://localhost:5000/api/test-idor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url: url })
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log("IDOR Test Result:", data);
+    })
+    .catch(error => {
+      console.error('Error while testing for IDOR:', error);
+    });
+  `;
 };
 
 // ✅ ทดสอบช่องโหว่ Broken Access Control
 javascriptGenerator.forBlock["check_broken_access"] = function () {
-  return `  check_broken_access(url);\n`;
+  return `
+    fetch('http://localhost:5000/api/test-broken-access-control', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url: url })
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log("Broken Access Control Test Result:", data);
+    })
+    .catch(error => {
+      console.error('Error while testing for Broken Access Control:', error);
+    });
+  `;
 };

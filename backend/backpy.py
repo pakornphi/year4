@@ -5,7 +5,7 @@ from flask_cors import CORS
 from csrf2 import CSRFTester  # Assuming CSRFTester is in csrf_tester.py
 from xss import XSSTester
 from sql import SQLInjectionTester  # Import SQLInjectionTester from sql.py
-import logging
+from BAC import BrokenAccessControlTester  # Import the BrokenAccessControlTester from BAC.py
 import requests
 
 app = Flask(__name__)
@@ -54,7 +54,7 @@ def test_xss():
     try:
         tester = XSSTester(
             base_url=target_url,
-            payload_file='payload.txt',
+            payload_file='payloaddom.txt',
             timeout=3,
             cooldown=0.5,
             workers=10
@@ -161,6 +161,28 @@ def test_idor():
 
     except Exception as e:
         return jsonify({'results': [f"❌ Failed to fetch {url}: {str(e)}"]}), 500
+
+# New route for Broken Access Control testing
+@app.route('/api/test-broken-access-control', methods=['POST'])
+def test_broken_access_control():
+    data = request.get_json()
+    target_url = data.get('url')
+
+    if not target_url:
+        return jsonify({'error': 'URL is required'}), 400
+
+    try:
+        # Initialize the BrokenAccessControlTester with the provided base_url
+        tester = BrokenAccessControlTester(base_url=target_url)
+
+        # Run all tests
+        results = tester.run_all()
+
+        # Return the results as a JSON response
+        return jsonify({'results': results}), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Broken Access Control test failed: {str(e)}'}), 500
 
 
 if __name__ == '__main__':
