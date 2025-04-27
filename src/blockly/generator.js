@@ -30,7 +30,7 @@ javascriptGenerator.forBlock["add_url"] = function (block) {
 
 // ✅ ทดสอบช่องโหว่ SQL Injection
 javascriptGenerator.forBlock["check_sql_injection"] = function (block) {
-  const url = block.getFieldValue("URL"); // Assuming the URL is a field in the block
+  const url = block.getFieldValue("URL");  // Get the URL field from the block
   
   return `
     fetch('http://localhost:5000/api/test-sql', {
@@ -38,10 +38,11 @@ javascriptGenerator.forBlock["check_sql_injection"] = function (block) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ url: "${url}" })
+      body: JSON.stringify({ url: url })  // Send the URL to the backend
     })
     .then(response => response.json())
     .then(data => {
+      // Check if SQL injection vulnerability is detected
       if (data.vulnerable) {
         console.log('SQL Injection Vulnerability detected with payload:', data.payload);
       } else {
@@ -53,6 +54,7 @@ javascriptGenerator.forBlock["check_sql_injection"] = function (block) {
     });
   `;
 };
+
 
 // ✅ ทดสอบช่องโหว่ XSS
 javascriptGenerator.forBlock["check_xss"] = function () {

@@ -4,23 +4,15 @@ import logging
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 import time
-import importlib.util
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 
 class XSSTester:
-    """
-    XSS testing toolkit that reads its payloads from Python files,
-    caches fetched pages, and runs tests in parallel.
-    """
     def __init__(
         self,
         base_url,
-        payload_file,
         timeout=5,
         cooldown=1,
         max_redirects=0,
@@ -32,13 +24,10 @@ class XSSTester:
         self.workers = workers
         self._soup_cache = {}
 
-        # Load payloads from the given file
-        self.payloads = self._read_payloads(payload_file)
+        # Always read payloads from 'payload.txt' (fixed file)
+        self.payloads = self._read_payloads('payload.txt')
 
-        # Load DOM-specific payloads from 'payloaddom.txt'
-        self.dom_payloads = self._read_payloads('payloaddom.txt')  # Fixed file name
-        logging.info(f"Loaded {len(self.payloads)} payloads from '{payload_file}'")
-        logging.info(f"Loaded {len(self.dom_payloads)} DOM payloads from 'payloaddom.txt'")
+        logging.info(f"Loaded {len(self.payloads)} payloads from 'payload.txt'")
 
         # Configure session with increased pool size
         self.session = requests.Session()
@@ -52,15 +41,23 @@ class XSSTester:
         self.session.max_redirects = max_redirects
 
     def _read_payloads(self, path):
-        namespace = {}
-        if not path:
-            return []
-        with open(path, 'r', encoding='utf-8') as f:
-            code = f.read()
-        exec(code, namespace)
-        if 'PAYLOADS' not in namespace:
-            raise AttributeError(f"No PAYLOADS list found in {path}")
-        return namespace['PAYLOADS']
+        """
+        Reads a list of payloads from the specified file.
+        Assumes the file contains a list of payloads (one per line).
+        """
+        payloads = []
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                payloads = [line.strip() for line in f if line.strip()]
+            if not payloads:
+                raise ValueError(f"The payload file '{path}' is empty or invalid.")
+        except FileNotFoundError:
+            logging.error(f"Payload file '{path}' not found.")
+            raise
+        except Exception as e:
+            logging.error(f"Error reading payloads from '{path}': {e}")
+            raise
+        return payloads
 
     def _sleep(self):
         time.sleep(self.cooldown)
@@ -102,15 +99,21 @@ class XSSTester:
         qs = parse_qs(parsed.query)
         params = list(qs) or ['q']
         for p in params:
-            test_qs = {k: (self.payload if k == p else v[0])
-                       for k, v in qs.items()} if qs else {p: self.payload}
-            url = urlunparse((parsed.scheme, parsed.netloc,
-                              parsed.path, '', urlencode(test_qs), ''))
+            test_qs = qs.copy()
+            test_qs[p] = [self.payload]
+            url = urlunparse((
+                parsed.scheme,
+                parsed.netloc,
+                parsed.path,
+                '',
+                urlencode(test_qs, doseq=True),
+                ''
+            ))
             resp = self._get(url, allow_redirects=False)
             if self.payload in getattr(resp, 'text', ''):
-                logging.warning(f"query_parameter_xss vulnerable on: {p}")
-                return True
-        return False
+                return {'vulnerability': True, 'payload': self.payload}
+    
+        return {'vulnerability': False}
 
     def test_form_input_xss(self):
         soup = self._fetch_soup(self.base_url)
@@ -118,27 +121,21 @@ class XSSTester:
             action = form.get('action') or self.base_url
             action_url = urlparse(self.base_url)._replace(path=action).geturl()
             data = {
-                inp.get('name'):
-                (self.payload if inp.get('type', 'text') in ['text', 'search', 'email', 'url']
-                 else inp.get('value', ''))
+                inp.get('name'): (self.payload if inp.get('type', 'text') in ['text', 'search', 'email', 'url']
+                                  else inp.get('value', ''))
                 for inp in form.find_all('input') if inp.get('name')
             }
-            if form.get('method', 'get').lower() == 'post':
-                resp = self._post(action_url, data=data)
-            else:
-                resp = self._get(action_url, params=data)
+            resp = self._post(action_url, data=data) if form.get('method', 'get').lower() == 'post' else self._get(action_url, params=data)
             if self.payload in getattr(resp, 'text', ''):
-                logging.warning(f"form_input_xss vulnerable on: {action_url}")
-                return True
-        return False
+                return {'vulnerability': True, 'payload': self.payload}
+        return {'vulnerability': False}
 
     def test_header_xss(self):
         headers = {'User-Agent': self.payload}
         resp = self._get(self.base_url, headers=headers)
         if self.payload in getattr(resp, 'text', ''):
-            logging.warning("header_xss via User-Agent header")
-            return True
-        return False
+            return {'vulnerability': True, 'payload': self.payload}
+        return {'vulnerability': False}
 
     def test_comment_xss(self):
         soup = self._fetch_soup(self.base_url)
@@ -154,18 +151,13 @@ class XSSTester:
                     data[name] = self.payload
                     found = True
                 else:
-                    data[name] = (field.get('value', '')
-                                  if field.name == 'input' else field.text)
+                    data[name] = (field.get('value', '') if field.name == 'input' else field.text)
             if not found:
                 continue
-            if form.get('method', 'get').lower() == 'post':
-                resp = self._post(action_url, data=data)
-            else:
-                resp = self._get(action_url, params=data)
+            resp = self._post(action_url, data=data) if form.get('method', 'get').lower() == 'post' else self._get(action_url, params=data)
             if self.payload in getattr(resp, 'text', ''):
-                logging.warning(f"comment_xss vulnerable on: {action_url}")
-                return True
-        return False
+                return {'vulnerability': True, 'payload': self.payload}
+        return {'vulnerability': False}
 
     def test_profile_field_xss(self):
         keys = ['profile', 'bio', 'about', 'description']
@@ -182,18 +174,13 @@ class XSSTester:
                     data[name] = self.payload
                     found = True
                 else:
-                    data[name] = (field.get('value', '')
-                                  if field.name == 'input' else field.text)
+                    data[name] = (field.get('value', '') if field.name == 'input' else field.text)
             if not found:
                 continue
-            if form.get('method', 'get').lower() == 'post':
-                resp = self._post(action_url, data=data)
-            else:
-                resp = self._get(action_url, params=data)
+            resp = self._post(action_url, data=data) if form.get('method', 'get').lower() == 'post' else self._get(action_url, params=data)
             if self.payload in getattr(resp, 'text', ''):
-                logging.warning(f"profile_field_xss vulnerable on: {action_url}")
-                return True
-        return False
+                return {'vulnerability': True, 'payload': self.payload}
+        return {'vulnerability': False}
 
     def test_file_upload_xss(self):
         soup = self._fetch_soup(self.base_url)
@@ -212,52 +199,16 @@ class XSSTester:
                 fi.get('name'): ('payload.html', self.payload, 'text/html')
                 for fi in file_inputs if fi.get('name')
             }
-            if form.get('method', 'get').lower() == 'post':
-                resp = self._post(action_url, data=data, files=files)
-            else:
-                resp = self._get(action_url, params=data)
+            resp = self._post(action_url, data=data, files=files) if form.get('method', 'get').lower() == 'post' else self._get(action_url, params=data)
             if self.payload in getattr(resp, 'text', ''):
-                logging.warning(f"file_upload_xss vulnerable on: {action_url}")
-                return True
-        return False
-
-    def test_dom_xss(self):
-        # Use DOM payload from the 'payloaddom.txt' file
-        for dom_payload in self.dom_payloads:
-            parsed = urlparse(self.base_url)
-            qs = parse_qs(parsed.query)
-            qs['dom'] = dom_payload
-            url = urlunparse((parsed.scheme, parsed.netloc,
-                              parsed.path, '', urlencode(qs, doseq=True), ''))
-            options = Options()
-            options.headless = True
-            try:
-                driver = webdriver.Chrome(options=options)
-                driver.get(url)
-                time.sleep(self.timeout)
-                vulnerable = dom_payload in driver.page_source
-                if vulnerable:
-                    logging.warning("dom_xss vulnerable on: dom")
-            except Exception as e:
-                logging.error(f"dom_xss error: {e}")
-                vulnerable = False
-            finally:
-                try:
-                    driver.quit()
-                except:
-                    pass
-            if vulnerable:
-                return True
-        return False
+                return {'vulnerability': True, 'payload': self.payload}
+        return {'vulnerability': False}
 
     def _run_single(self, method, payload):
         self.payload = payload
         return method()
 
     def run_all(self, max_workers=None):
-        """
-        Run each test_* method in parallel across payloads.
-        """
         results = {}
         methods = [
             (name, m) for name, m in inspect.getmembers(self, inspect.ismethod)
@@ -266,52 +217,62 @@ class XSSTester:
         workers = max_workers or self.workers
 
         for name, method in methods:
-            vulnerable = []
+            result = []
+            # Submit each payload test to the ThreadPoolExecutor
             with ThreadPoolExecutor(max_workers=workers) as pool:
-                futures = {pool.submit(self._run_single, method, p): p
-                           for p in self.payloads}
+                futures = {pool.submit(self._run_single, method, p): p for p in self.payloads}
                 for future in as_completed(futures):
-                    if future.result():
-                        vulnerable.append(futures[future])
+                    res = future.result()  # Get the result from the future
+                    if isinstance(res, dict):
+                        result.append(res)  # If the result is a dictionary, append it
+                    else:
+                        # If the result is a boolean, treat it as a dictionary
+                        result.append({'vulnerability': res})
 
-            logging.info(f"{name}: {len(vulnerable)} payloads triggered vulnerability")
-            results[name] = vulnerable
+            results[name] = result
 
-        results['vulnerability'] = any(
-            results[test] for test in results if test != 'vulnerability'
-        )
         return results
 
     def print_results(self, results):
-        """
-        Display the results of the XSS testing.
-        """
-        for test, vuln_list in results.items():
-            if test == 'vulnerability':
-                print(f"{test}: {'YES' if vuln_list else 'NO'}")
-            else:
-                print(f"{test}: {len(vuln_list)} vulnerable payload(s)")
+        printed_tests = set()  # Keep track of printed tests to avoid duplicates
+        
+        # Iterate over all tests and their results
+        for test, result_list in results.items():
+            for result in result_list:
+                if isinstance(result, dict):
+                    vulnerability = result['vulnerability']
+                    payload = result.get('payload', 'N/A')
+                    
+                    # Construct the result string for the test
+                    result_str = f"{test} → vulnerability: {vulnerability}"
+
+                    # If the vulnerability is True, include the payload
+                    if vulnerability == True:
+                        result_str += f" with payload: {payload}"
+
+                    # Ensure no duplicate results are printed
+                    if result_str not in printed_tests:
+                        print(result_str)  # Print the result if not printed before
+                        printed_tests.add(result_str)  # Add to the set of printed results
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description="XSS Testing Script")
     parser.add_argument('url', help="Base URL to test, including any query string")
-    parser.add_argument('--payload-file', '-f', required=True,
-                        help="Path to payload file (defines PAYLOADS list)")
-    parser.add_argument('--timeout', type=int, default=3,
-                        help="HTTP timeout in seconds")
-    parser.add_argument('--cooldown', type=float, default=0.5,
-                        help="Cooldown between requests in seconds")
-    parser.add_argument('--workers', type=int, default=10,
-                        help="Number of parallel worker threads")
+    parser.add_argument('--timeout', type=int, default=3, help="HTTP timeout in seconds")
+    parser.add_argument('--cooldown', type=float, default=0.5, help="Cooldown between requests in seconds")
+    parser.add_argument('--workers', type=int, default=10, help="Number of parallel worker threads")
     args = parser.parse_args()
 
     tester = XSSTester(
         base_url=args.url,
-        payload_file=args.payload_file,
         timeout=args.timeout,
         cooldown=args.cooldown,
         workers=args.workers
     )
     results = tester.run_all(max_workers=args.workers)
     tester.print_results(results)
+
+
+if __name__ == '__main__':
+    main()

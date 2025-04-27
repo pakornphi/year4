@@ -42,7 +42,6 @@ def test_csrf():
     return jsonify(result_data)
 
 
-# XSS Tester class is used in this route
 @app.route('/api/test-xss', methods=['POST'])
 def test_xss():
     data = request.get_json()
@@ -52,21 +51,30 @@ def test_xss():
         return jsonify({'error': 'URL is required'}), 400
 
     try:
+        # No need to pass payload_file because it's fixed to 'payload.txt'
         tester = XSSTester(
             base_url=target_url,
-            payload_file='payloaddom.txt',
             timeout=3,
             cooldown=0.5,
             workers=10
         )
+        
+        # Run all tests and get raw results
         raw_results = tester.run_all(max_workers=tester.workers)
+        
+        # Ensure that we handle non-list results (like booleans)
         results = {
-            name: {'count': len(payloads), 'payloads': payloads}
+            name: {
+                'count': len(payloads) if isinstance(payloads, list) else 0,
+                'payloads': payloads if isinstance(payloads, list) else []
+            }
             for name, payloads in raw_results.items()
         }
+        
         return jsonify({'results': results}), 200
     except Exception as e:
         return jsonify({'error': f'XSS test failed: {str(e)}'}), 500
+
 
 # SQL Injection Tester class is used in this route
 @app.route('/api/test-sql', methods=['POST'])

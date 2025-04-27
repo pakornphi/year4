@@ -1,3 +1,0 @@
-PAYLOADS = [
-    "<script>alert('XSS')</script>"
-]
