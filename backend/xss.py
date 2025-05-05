@@ -231,6 +231,8 @@ class XSSTester:
                               parsed.path, '', urlencode(qs, doseq=True), ''))
             options = Options()
             options.headless = True
+            options.add_argument('--disable-gpu')
+            options.add_argument('--no-sandbox')
             try:
                 driver = webdriver.Chrome(options=options)
                 driver.get(url)
@@ -261,7 +263,7 @@ class XSSTester:
         results = {}
         methods = [
             (name, m) for name, m in inspect.getmembers(self, inspect.ismethod)
-            if name.startswith('test_')
+            if name.startswith('test_') and name != 'test_dom_xss'
         ]
         workers = max_workers or self.workers
 

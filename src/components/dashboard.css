@@ -1,167 +1,120 @@
-/* dashboard.css */
+/* dashboard.css - styled for beautiful, modern UI */
 
-.dashboard-container {
-  max-width: 1000px;
-  margin: 40px auto;
-  padding: 30px;
-  background-color: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-  font-family: "Segoe UI", sans-serif;
-}
-
-.dashboard-title {
-  text-align: center;
-  font-size: 28px;
-  color: #1a5bbf;
-  margin-bottom: 20px;
-}
-
-.back-button,
-.clear-button {
-  padding: 10px 20px;
-  margin: 10px;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: 0.3s ease;
-}
-
-.back-button {
-  background-color: #4caf50;
-  color: white;
-}
-
-.back-button:hover {
-  background-color: #3e8e41;
-  transform: scale(1.03);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.clear-button {
-  background-color: #f44336;
-  color: white;
-}
-
-.clear-button:hover {
-  background-color: #d32f2f;
-}
-
-.results-table {
-  margin-top: 20px;
-  display: grid;
-  gap: 20px;
-}
-
-.result-card {
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-  transition: 0.3s ease;
-}
-
-.result-card.pass {
-  background-color: #e0f7e9;
-  border-left: 6px solid #2ecc71;
-}
-
-.result-card.fail {
-  background-color: #fdecea;
-  border-left: 6px solid #e74c3c;
-}
-
-.result-card p {
-  margin: 6px 0;
-  font-size: 16px;
-}
-
-.no-results {
-  margin-top: 40px;
-  text-align: center;
-  color: #999;
-  font-size: 18px;
-}
-
-.dashboard-actions {
-  margin-bottom: 20px;
-  display: flex;
-  gap: 10px;
-}
-
-.pagination-buttons {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-}
-
-.pagination-buttons button {
-  padding: 8px 16px;
-  background-color: #1a5bbf;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.pagination-buttons button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-/* Styles for the dashboard */
 .dashboard-layout {
   display: flex;
   height: 100vh;
+  background-color: #f9fafb;
+  font-family: 'Segoe UI', sans-serif;
 }
 
 .sidebar {
-  width: 250px;
-  background-color: #f2f2f2;
+  width: 260px;
+  background-color: #ffffff;
+  border-right: 1px solid #e5e7eb;
   padding: 20px;
-  border-right: 1px solid #ccc;
+  overflow-y: auto;
+}
+
+.sidebar h3 {
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+  color: #1f2937;
 }
 
 .url-button {
   display: block;
   width: 100%;
-  margin-bottom: 10px;
-  padding: 10px;
-  background-color: white;
-  border: 1px solid #ccc;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background-color: #f3f4f6;
+  color: #111827;
+  border: none;
+  border-radius: 6px;
   text-align: left;
   cursor: pointer;
-  transition: 0.2s;
+  transition: background-color 0.2s;
 }
 
-.url-button:hover,
+.url-button:hover {
+  background-color: #e5e7eb;
+}
+
 .url-button.active {
-  background-color: #007bff;
+  background-color: #3b82f6;
   color: white;
 }
 
 .dashboard-main {
   flex: 1;
-  padding: 20px;
+  padding: 30px 40px;
   overflow-y: auto;
 }
 
-.results-table {
+.dashboard-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.dashboard-header h1 {
+  font-size: 1.5rem;
+  color: #111827;
+}
+
+.dashboard-header button {
+  margin-left: 8px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.dashboard-header button:hover {
+  opacity: 0.9;
+}
+
+.dashboard-header button:nth-child(1) {
+  background-color: #d1d5db;
+  color: #1f2937;
+}
+
+.dashboard-header button:nth-child(2) {
+  background-color: #ef4444;
+  color: white;
 }
 
 .result-card {
-  padding: 15px;
-  margin: 10px 0;
-  border: 1px solid #ccc;
-  background-color: #f9f9f9;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
+  padding: 14px 20px;
+  margin-bottom: 12px;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5;
+  transition: background-color 0.3s ease;
 }
 
-.no-results {
-  color: red;
+.result-card.fail {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.result-card.pass {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.result-card.unknown {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.result-card.full {
+  white-space: pre-wrap;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  font-family: monospace;
+  color: #1f2937;
 }

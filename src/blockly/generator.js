@@ -7,28 +7,29 @@ javascriptGenerator.forBlock["set_url"] = function (block) {
   let extraUrls = javascriptGenerator.statementToCode(block, "MORE_URLS").trim();
 
   if (extraUrls) {
-    extraUrls = extraUrls.split("\n").filter(url => url && url.includes(".loca.lt")).join(", ");
+    extraUrls = extraUrls
+      .split("\n")
+      .filter(line => line.trim() !== "")
+      .join(", ");
   }
 
   const securityTests = javascriptGenerator.statementToCode(block, "SECURITY_TESTS");
 
   return `
-  const urls = [${mainUrl}${extraUrls ? `, ${extraUrls}` : ""}];
-  // Filter URLs to only include those containing ".loca.lt"
-  const filteredUrls = urls.filter(url => url.includes(".loca.lt"));
+    const urls = [${mainUrl}${extraUrls ? `, ${extraUrls}` : ""}];
 
-  filteredUrls.forEach(url => {
-    ${securityTests}
-  });
+    urls.forEach(url => {
+      ${securityTests}
+    });
   `;
 };
-
 
 // ✅ แปลง Block `add_url` เป็นตัวแปร URL
 javascriptGenerator.forBlock["add_url"] = function (block) {
   const url = `"${block.getFieldValue("URL")}"`;
   return `${url},\n`;
 };
+
 
 // ✅ ทดสอบช่องโหว่ SQL Injection
 javascriptGenerator.forBlock["check_sql_injection"] = function (block) {
@@ -59,10 +60,38 @@ javascriptGenerator.forBlock["check_sql_injection"] = function (block) {
 
 // ✅ ทดสอบช่องโหว่ XSS
 javascriptGenerator.forBlock["check_xss"] = function () {
-  return `  check_xss(url);\n`;
+  return `
+  fetch("http://localhost:5000/api/test-xss", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url })
+  })
+  .then(response => response.json())
+  .then(data => {
+    const isVulnerable = data?.results?.vulnerability === true;
+    console.log("✅ XSS Test Result for", url, ":", isVulnerable);
+
+    let results = JSON.parse(localStorage.getItem("testResults")) || [];
+    const existingIndex = results.findIndex(r => r.url === url);
+    const newEntry = {
+      url: url,
+      xss_vulnerable: isVulnerable
+    };
+
+    if (existingIndex !== -1) {
+      results[existingIndex] = { ...results[existingIndex], ...newEntry };
+    } else {
+      results.push(newEntry);
+    }
+
+    localStorage.setItem("testResults", JSON.stringify(results));
+  })
+  .catch(error => {
+    console.error("❌ Failed to test XSS:", error);
+  });
+  `;
 };
 
-// Example for the CSRF Block: Fetch URL from the array and test
 javascriptGenerator.forBlock["check_csrf"] = function () {
   return `
   urls.forEach(url => {
@@ -73,24 +102,26 @@ javascriptGenerator.forBlock["check_csrf"] = function () {
     })
     .then(response => response.json())
     .then(data => {
-      console.log("✅ CSRF Test Result for", url, ":", data.results);
-      
+      console.log("✅ CSRF Test Result for", url, ":", data);
+
+      // 🧠 สร้างผลลัพธ์แบบเต็มให้ Dashboard อ่านได้
+      const result = { tested_url: url };
+      Object.entries(data).forEach(([key, value]) => {
+        if (key.startsWith("test_")) {
+          result[key] = value;
+        }
+      });
+
       let results = JSON.parse(localStorage.getItem("testResults")) || [];
-      const resultString = "🔍 " + url + " → " + JSON.stringify(data.results);
-      if (!results.includes(resultString)) {
-        results.push(resultString);
+
+      // ถ้า URL นี้ยังไม่ถูกเพิ่ม ให้เพิ่มใหม่
+      if (!results.some(entry => entry.tested_url === url)) {
+        results.push(result);
+        localStorage.setItem("testResults", JSON.stringify(results));
       }
-
-      localStorage.setItem("testResults", JSON.stringify(results));
-
-      // Display results on the page
-      const resultContainer = document.getElementById("test-results");
-      const resultItem = document.createElement("div");
-      resultItem.className = "test-result-item";
-      resultItem.innerHTML = "<strong>" + url + "</strong><br>" + JSON.stringify(data.results);
-      resultContainer.appendChild(resultItem);
     })
     .catch(error => {
+      console.error("❌ Failed to test CSRF:", error);
     });
   });
   `;

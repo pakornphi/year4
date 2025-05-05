@@ -86,7 +86,7 @@ const Main = () => {
         localStorage.setItem("csrfResults", JSON.stringify(testResults));
         alert("Code Executed Successfully!");
         navigate("/dashboard");
-      }, 1000);
+      }, 10000);
     } catch (error) {
       console.error("Execution Error:", error);
       alert("Error executing code!");
