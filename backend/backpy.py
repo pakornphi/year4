@@ -3,6 +3,7 @@ from flask_cors import CORS
 from csrf2 import CSRFTester  # Assuming CSRFTester is in csrf_tester.py
 from xss import XSSTester
 from sql import SQLInjectionTester  # Import SQLInjectionTester from sql.py
+from sql2 import SQLInjectionTester
 import logging
 
 app = Flask(__name__)
@@ -68,36 +69,36 @@ def test_xss():
 # SQL Injection Tester class is used in this route
 @app.route('/api/test-sql', methods=['POST'])
 def test_sql_injection():
-    data = request.get_json()
+    data       = request.get_json(force=True)
     target_url = data.get('url')
+    params     = data.get('params')  # optional now
 
     if not target_url:
         return jsonify({'error': 'URL is required'}), 400
 
     try:
+        # instantiate without endpoints or params
         tester = SQLInjectionTester(
             base_url=target_url,
-            endpoints=['/', '/login'],  # Adjust according to your target app's endpoints
-            timeout=5.0
+            timeout=5.0,
+            max_workers=10
         )
-        
-        # Run the SQL Injection test
-        vuln_found, payload = tester.test_sql_injection()
-        
-        # Return results based on whether a vulnerability was found
-        if vuln_found:
-            return jsonify({
-                'vulnerable': True,
-                'payload': payload
-            }), 200
-        else:
-            return jsonify({
-                'vulnerable': False,
-                'message': 'No vulnerabilities detected'
-            }), 200
+
+        # run_tests will use data['params'] if provided, otherwise DEFAULT_PARAMS
+        results = tester.run_tests(params)
+
+        vulnerable_payloads = [name for name, vuln in results.items() if vuln]
+        return jsonify({
+            'vulnerable': bool(vulnerable_payloads),
+            'payloads': vulnerable_payloads or None
+        }), 200
+
+    except ValueError as ve:
+        # thrown if params is empty and no DEFAULT_PARAMS
+        return jsonify({'error': str(ve)}), 400
 
     except Exception as e:
-        return jsonify({'error': f'SQL Injection test failed: {str(e)}'}), 500
+        return jsonify({'error': f'SQL Injection test failed: {e}'}), 500
 
 
 if __name__ == '__main__':
