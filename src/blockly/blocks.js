@@ -75,7 +75,7 @@ Blockly.Blocks["check_idor"] = {
 };
 
 // ✅ Block ตรวจสอบ Broken Access Control
-Blockly.Blocks["check_broken_access"] = {
+Blockly.Blocks["check_bac"] = {
   init: function () {
     this.appendDummyInput().appendField("Check Broken Access Control");
     this.setColour(300);

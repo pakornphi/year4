@@ -45,7 +45,7 @@ router.post("/register", async (req, res) => {
     const token = jwt.sign(
       { userId: newUser.rows[0].id, email: newUser.rows[0].email },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "10m" }
     );
 
     res.status(201).json({ token, user: { id: newUser.rows[0].id, email: newUser.rows[0].email } });
@@ -76,7 +76,7 @@ router.post("/login", async (req, res) => {
 
     // สร้าง JWT Token
     const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "10m",
     });
 
     res.json({ token, user: { id: user.id, email: user.email } });

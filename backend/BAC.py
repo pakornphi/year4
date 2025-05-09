@@ -1,5 +1,6 @@
 import requests
 import re
+import sys
 from urllib.parse import urljoin
 
 class BrokenAccessControlTester:
@@ -132,6 +133,11 @@ class BrokenAccessControlTester:
         
         return results
 
+
 if __name__ == "__main__":
-    tester = BrokenAccessControlTester("http://127.0.0.1:7001")
-    tester.run_all()
+    if len(sys.argv) < 2:
+        print("Usage: python BAC.py <target_url>")
+    else:
+        url = sys.argv[1]
+        tester = BrokenAccessControlTester(url)
+        tester.run_all()

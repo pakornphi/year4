@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as Blockly from "blockly";
@@ -14,17 +15,13 @@ const Main = () => {
   const workspace = useRef(null);
 
   useEffect(() => {
-    // const token = localStorage.getItem("token");
-    // if (!token) {
-    //   alert("⚠️ You must be logged in to access this page.");
-    //   navigate("/login");
-    // }
-
+    // เคลียร์ workspace เก่า
     if (workspace.current) {
       workspace.current.dispose();
       workspace.current = null;
     }
 
+    // Inject Blockly
     workspace.current = Blockly.inject(blocklyDiv.current, {
       toolbox: `
         <xml>
@@ -34,7 +31,7 @@ const Main = () => {
           <block type="check_xss"></block>
           <block type="check_csrf"></block>
           <block type="check_idor"></block>
-          <block type="check_broken_access"></block>
+          <block type="check_bac"></block>
         </xml>
       `,
       rtl: false,
@@ -69,27 +66,40 @@ const Main = () => {
       return;
     }
 
-    localStorage.removeItem("testResults");
+    // ✅ เคลียร์ผลลัพธ์แต่ละประเภทก่อนรันใหม่
+    localStorage.removeItem("xssResults");
+    localStorage.removeItem("csrfResults");
+    localStorage.removeItem("sqlResults");
+    localStorage.removeItem("idorResults");
+    localStorage.removeItem("bacResults");
+
     const code = javascriptGenerator.workspaceToCode(workspace.current);
     console.log("Generated Code:", code);
 
     try {
-      eval(code);
+      eval(code); // 👈 จำไว้ว่าควรใช้ใน dev เท่านั้น
 
       setTimeout(() => {
-        const testResults = JSON.parse(localStorage.getItem("testResults")) || [];
-        if (testResults.length === 0) {
-          alert("No test results found. Please ensure the test has run.");
+        const xss = JSON.parse(localStorage.getItem("xssResults") || "[]");
+        const csrf = JSON.parse(localStorage.getItem("csrfResults") || "[]");
+        const sql = JSON.parse(localStorage.getItem("sqlResults") || "[]");
+        const idor = JSON.parse(localStorage.getItem("idorResults") || "[]");
+        const bac = JSON.parse(localStorage.getItem("bacResults") || "[]");
+
+        const total =
+          xss.length + csrf.length + sql.length + idor.length + bac.length;
+
+        if (total === 0) {
+          alert("⚠️ No test results found. Please ensure the test has run.");
           return;
         }
 
-        localStorage.setItem("csrfResults", JSON.stringify(testResults));
-        alert("Code Executed Successfully!");
+        alert("✅ Code Executed Successfully!");
         navigate("/dashboard");
-      }, 10000);
+      }, 30000); // ⏳ เผื่อเวลา API ทดสอบทั้งหมด
     } catch (error) {
-      console.error("Execution Error:", error);
-      alert("Error executing code!");
+      console.error("❌ Execution Error:", error);
+      alert("Error executing generated code!");
     }
   };
 

@@ -4,6 +4,8 @@ from csrf2 import CSRFTester  # Assuming CSRFTester is in csrf_tester.py
 from xss import XSSTester
 from sql import SQLInjectionTester  # Import SQLInjectionTester from sql.py
 import logging
+from BAC import BrokenAccessControlTester  # Import the BrokenAccessControlTester from BAC.py
+from Idor import IDORSummarizedTester  # ← เพิ่มส่วน import นี้
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend-backend communication
@@ -44,6 +46,7 @@ def test_csrf():
 def test_xss():
     data = request.get_json()
     target_url = data.get('url')
+    print("✅ /api/test-xss called")
 
     if not target_url:
         return jsonify({'error': 'URL is required'}), 400
@@ -56,12 +59,24 @@ def test_xss():
             cooldown=0.5,
             workers=10
         )
+
         raw_results = tester.run_all(max_workers=tester.workers)
+
+        for name, payloads in raw_results.items():
+            if name == 'vulnerability':
+                print(f"vulnerability: {'YES' if payloads else 'NO'}")
+            else:
+                print(f"[INFO] {name}: {len(payloads)} payloads triggered vulnerability")
+                print(f"{name}: {len(payloads)} vulnerable payload(s)")
+
         results = {
             name: {'count': len(payloads), 'payloads': payloads}
-            for name, payloads in raw_results.items()
+            for name, payloads in raw_results.items() if name != 'vulnerability'
         }
+        results['vulnerability'] = raw_results.get('vulnerability', False)
+
         return jsonify({'results': results}), 200
+
     except Exception as e:
         return jsonify({'error': f'XSS test failed: {str(e)}'}), 500
 
@@ -99,6 +114,45 @@ def test_sql_injection():
     except Exception as e:
         return jsonify({'error': f'SQL Injection test failed: {str(e)}'}), 500
 
+# New route for Broken Access Control testing
+@app.route('/api/test-broken-access-control', methods=['POST'])
+def test_broken_access_control():
+    data = request.get_json()
+    target_url = data.get('url')
 
+    if not target_url:
+        return jsonify({'error': 'URL is required'}), 400
+
+    try:
+        # Initialize the BrokenAccessControlTester with the provided base_url
+        tester = BrokenAccessControlTester(base_url=target_url)
+
+        # Run all tests
+        results = tester.run_all()
+
+        # Return the results as a JSON response
+        return jsonify({'results': results}), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Broken Access Control test failed: {str(e)}'}), 500
+    
+
+
+@app.route('/api/test-idor', methods=['POST'])
+def test_idor():
+    data = request.get_json()
+    target_url = data.get('url')
+
+    if not target_url:
+        return jsonify({'error': 'URL is required'}), 400
+
+    try:
+        tester = IDORSummarizedTester(url=target_url)
+        results = tester.test()
+        return jsonify({'results': results}), 200
+
+    except Exception as e:
+        return jsonify({'error': f'IDOR test failed: {str(e)}'}), 500
+    
 if __name__ == '__main__':
     app.run(debug=True)
