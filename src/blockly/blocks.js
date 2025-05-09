@@ -13,7 +13,7 @@ Blockly.Blocks["set_url"] = {
       .setCheck(null)
       .appendField("Run Security Tests");
     this.setColour(230);
-    this.setTooltip("Set multiple URLs and run security tests.");
+    this.setTooltip("ตั้งค่าที่อยู่เว็บไซต์ (URL) แล้วดำเนินการทดสอบด้านความปลอดภัยหลายๆ อัน");
   },
 };
 
@@ -26,7 +26,7 @@ Blockly.Blocks["add_url"] = {
     this.setPreviousStatement(true, "String");
     this.setNextStatement(true, "String");
     this.setColour(160);
-    this.setTooltip("Add another URL to test.");
+    this.setTooltip("เพิ่มที่อยู่เว็บไซต์ (URL) ที่ต้องการทดสอบ");
   },
 };
 
@@ -37,7 +37,7 @@ Blockly.Blocks["check_sql_injection"] = {
     this.setColour(0);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setTooltip("ตรวจสอบช่องโหว่ SQL Injection เช่นการป้อนโค้ด SQL ผ่านแบบฟอร์มเพื่อดึง/แก้ไขข้อมูลจากฐานข้อมูล");
+    this.setTooltip("SQL Injection การโจมตีที่แฮกเกอร์สอดแทรกคำสั่ง SQL ลงไปในช่องใส่ข้อมูลของเว็บแอปพลิเคชัน (เช่น ฟอร์มล็อกอิน, พารามิเตอร์ใน URL หรือฟิลด์ค้นหา) เพื่อให้เซิร์ฟเวอร์ฐานข้อมูลประมวลผลคำสั่งผิดปกติที่ผู้พัฒนามิได้ตั้งใจเขียนไว้");
   },
 };
 
@@ -48,7 +48,7 @@ Blockly.Blocks["check_xss"] = {
     this.setColour(120);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setTooltip("ตรวจสอบช่องโหว่ Cross-Site Scripting (XSS) ที่ผู้โจมตีอาจแทรก JavaScript ลงในหน้าเว็บ");
+    this.setTooltip("Cross-Site Scripting (XSS) ช่องโหว่บนเว็บแอปพลิเคชัน ที่เกิดขึ้นเมื่อแฮกเกอร์สามารถ “ฝัง” โค้ดฝั่งไคลเอนต์ (โดยปกติคือ JavaScript) ลงไปในหน้าที่ผู้ใช้คนอื่นจะเข้าชมได้ ทำให้เบราว์เซอร์ของผู้ใช้คนอื่นรันโค้ดนั้นโดยไม่รู้ตัว");
   },
 };
 
@@ -59,7 +59,7 @@ Blockly.Blocks["check_csrf"] = {
     this.setColour(180);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setTooltip("ตรวจสอบว่ามีการป้องกัน Cross-Site Request Forgery (CSRF) หรือไม่ เช่น CSRF Token");
+    this.setTooltip("Cross-Site Request Forgery (CSRF) การโจมตีที่หวังใช้สิทธิ์ของผู้ใช้ที่กำลังล็อกอินในเว็บแอปพลิเคชันหนึ่ง ให้ส่งคำขอ (request) ที่ผู้ใช้ไม่ได้ตั้งใจทำ เช่น โอนเงิน เปลี่ยนรหัสผ่าน หรือสั่งซื้อสินค้า โดยแฮกเกอร์จะหลอกให้เบราว์เซอร์ของเหยื่อส่งคำขอนั้นไปยังเซิร์ฟเวอร์โดยอัตโนมัติ");
   },
 };
 
@@ -70,7 +70,7 @@ Blockly.Blocks["check_idor"] = {
     this.setColour(260);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setTooltip("ตรวจสอบ Insecure Direct Object References เช่น การเข้าถึงข้อมูลคนอื่นผ่าน URL โดยไม่ตรวจสอบสิทธิ์");
+    this.setTooltip("Insecure Direct Object References เป็นช่องโหว่ด้านการควบคุมสิทธิ์ (Authorization) ที่เกิดขึ้นเมื่อแอปพลิเคชันอนุญาตให้ผู้ใช้เข้าถึง “วัตถุ” (Object) เช่น ไฟล์ ข้อมูลเรคอร์ด หรือทรัพยากรต่างๆ โดยใช้ตัวระบุ (ID) ตรงๆ ใน URL หรือพารามิเตอร์ โดยไม่ตรวจสอบว่าผู้ใช้คนนั้นมีสิทธิ์เข้าถึงวัตถุนั้นจริงหรือไม่");
   },
 };
 
@@ -81,7 +81,7 @@ Blockly.Blocks["check_bac"] = {
     this.setColour(300);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setTooltip("ตรวจสอบการควบคุมสิทธิ์ในการเข้าถึง เช่น เข้าถึงหน้าแอดมินโดยไม่ได้รับอนุญาต");
+    this.setTooltip("Broken Access Control เกิดขึ้นเมื่อเว็บแอปพลิเคชันหรือ API ไม่ได้ตรวจสอบสิทธิ์ผู้ใช้อย่างถูกต้องก่อนอนุญาตให้เข้าถึงฟังก์ชันหรือข้อมูล ทำให้ผู้ไม่หวังดีเข้าถึงหรือกระทำการที่ควรสงวนไว้เฉพาะผู้ใช้ระดับสูงกว่าได้");
   },
 };
 Blockly.Tooltip.DELAY = 250;
