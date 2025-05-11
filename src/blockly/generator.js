@@ -31,34 +31,46 @@ javascriptGenerator.forBlock["add_url"] = function (block) {
 };
 
 // ✅ SQL Injection
-javascriptGenerator.forBlock["check_sql_injection"] = function (block) {
-  const url = block.getFieldValue("URL");
-
+javascriptGenerator.forBlock["check_sql_injection"] = function () {
   return `
-    fetch('http://localhost:5000/api/test-sql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: "${url}" })
+    fetch("http://localhost:5000/api/test-sql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url })
     })
     .then(response => response.json())
     .then(data => {
+      const results = data.results || {};
+      const messages = [];
+
+      Object.entries(results).forEach(([payload, isVuln]) => {
+        messages.push(\`\${payload} - vulnerability : \${isVuln}\`);
+      });
+
       const entry = {
-        url: "${url}",
-        tested_url: "${url}",
-        vulnerable: data.vulnerable,
-        payload: data.payload
+        url,
+        tested_url: url,
+        vulnerable: data.vulnerable || false,
+        messages
       };
 
-      let results = JSON.parse(localStorage.getItem("sqlResults")) || [];
-      results.push(entry);
-      localStorage.setItem("sqlResults", JSON.stringify(results));
-      console.log("✅ Saved SQL results for", "${url}");
+      let allResults = JSON.parse(localStorage.getItem("sqlResults")) || [];
+      const index = allResults.findIndex(r => r.tested_url === url);
+      if (index !== -1) {
+        allResults[index] = { ...allResults[index], ...entry };
+      } else {
+        allResults.push(entry);
+      }
+
+      localStorage.setItem("sqlResults", JSON.stringify(allResults));
+      console.log("✅ Saved SQL Injection results for", url);
     })
     .catch(error => {
       console.error("❌ Failed to test SQL injection:", error);
     });
   `;
 };
+
 
 // ✅ XSS
 javascriptGenerator.forBlock["check_xss"] = function () {

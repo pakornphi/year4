@@ -17,7 +17,7 @@ const Register = () => {
     setError("");
     setSuccess("");
 
-    if (!username || !email || !password || !confirmPassword) {
+    if (!username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       setError("All fields are required");
       return;
     }
@@ -37,7 +37,7 @@ const Register = () => {
       const response = await fetch("http://localhost:8000/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username, email, password, confirmPassword })
       });
 
       const data = await response.json();

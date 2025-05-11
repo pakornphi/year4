@@ -26,6 +26,7 @@ const Login = () => {
       if (!response.ok) throw new Error(data.message);
 
       localStorage.setItem("token", data.token);
+      localStorage.setItem("username", data.username);
       alert("✅ Login successful!");
       navigate("/main");
     } catch (err) {

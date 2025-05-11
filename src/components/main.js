@@ -1,5 +1,161 @@
 
-import { useEffect, useRef } from "react";
+// import { useEffect, useRef } from "react";
+// import { useNavigate } from "react-router-dom";
+// import * as Blockly from "blockly";
+// import { javascriptGenerator } from "blockly/javascript";
+// import "../main.css";
+// import { useState } from "react";
+
+// // ✅ Import Blocks และ Generator
+// import "../blockly/blocks";
+// import "../blockly/generator";
+
+// const Main = () => {
+//   const navigate = useNavigate();
+//   const blocklyDiv = useRef(null);
+//   const workspace = useRef(null);
+//   const [logoutMessage, setLogoutMessage] = useState("");
+//   const [username, setUsername] = useState("");
+  
+
+//   useEffect(() => {
+//     const storedUsername = localStorage.getItem("username");
+//     if (storedUsername) {
+//       setUsername(storedUsername);
+//     }
+
+//     // เคลียร์ workspace เก่า
+//     if (workspace.current) {
+//       workspace.current.dispose();
+//       workspace.current = null;
+//     }
+
+//     // Inject Blockly
+//     workspace.current = Blockly.inject(blocklyDiv.current, {
+//       toolbox: `
+//         <xml>
+//           <block type="set_url"></block>
+//           <block type="add_url"></block>
+//           <block type="check_sql_injection"></block>
+//           <block type="check_xss"></block>
+//           <block type="check_csrf"></block>
+//           <block type="check_idor"></block>
+//           <block type="check_bac"></block>
+//         </xml>
+//       `,
+//       rtl: false,
+//       toolboxPosition: "start",
+//     });
+
+//     Blockly.svgResize(workspace.current);
+//   }, [navigate]);
+
+//   const generateCode = () => {
+//     if (!workspace.current || workspace.current.getAllBlocks(false).length === 0) {
+//       alert("⚠️ No blocks found! Please add blocks before generating code.");
+//       return;
+//     }
+
+//     const allBlocks = workspace.current.getAllBlocks(false);
+//     let hasSetUrl = false;
+//     let hasCheckBlock = false;
+
+//     allBlocks.forEach((block) => {
+//       if (block.type === "set_url") hasSetUrl = true;
+//       if (block.type.startsWith("check_")) hasCheckBlock = true;
+//     });
+
+//     if (!hasSetUrl) {
+//       alert("⚠️ You must set a URL before generating code.");
+//       return;
+//     }
+
+//     if (!hasCheckBlock) {
+//       alert("⚠️ Please add at least one security check before generating code.");
+//       return;
+//     }
+
+//     // ✅ เคลียร์ผลลัพธ์แต่ละประเภทก่อนรันใหม่
+//     localStorage.removeItem("xssResults");
+//     localStorage.removeItem("csrfResults");
+//     localStorage.removeItem("sqlResults");
+//     localStorage.removeItem("idorResults");
+//     localStorage.removeItem("bacResults");
+
+//     const code = javascriptGenerator.workspaceToCode(workspace.current);
+//     console.log("Generated Code:", code);
+
+//     try {
+//       eval(code); // 👈 จำไว้ว่าควรใช้ใน dev เท่านั้น
+
+//       setTimeout(() => {
+//         const xss = JSON.parse(localStorage.getItem("xssResults") || "[]");
+//         const csrf = JSON.parse(localStorage.getItem("csrfResults") || "[]");
+//         const sql = JSON.parse(localStorage.getItem("sqlResults") || "[]");
+//         const idor = JSON.parse(localStorage.getItem("idorResults") || "[]");
+//         const bac = JSON.parse(localStorage.getItem("bacResults") || "[]");
+
+//         const total =
+//           xss.length + csrf.length + sql.length + idor.length + bac.length;
+
+//         if (total === 0) {
+//           alert("⚠️ No test results found. Please ensure the test has run.");
+//           return;
+//         }
+
+//         alert("✅ Code Executed Successfully!");
+//         navigate("/dashboard");
+//       }, 40000); // ⏳ เผื่อเวลา API ทดสอบทั้งหมด
+//     } catch (error) {
+//       console.error("❌ Execution Error:", error);
+//       alert("Error executing generated code!");
+//     }
+//   };
+
+//   return (
+//     <div className="main-container">
+//       {/* ✅ Navigation Bar */}
+//       <div className="navbar">
+//         <div className="navbar-left">
+//           <h1>Website Security Testing 🚀</h1>
+//            <h1>Welcome, {username} 👋</h1>
+//           <button className="dashboard-button" onClick={() => navigate("/dashboard")}>
+//             Dashboard
+//           </button>
+    
+//         </div>
+//         <div className="navbar-buttons">
+//           <button className="generate-button" onClick={generateCode}>
+//             Simulate
+//           </button>
+//           <button
+//             className="logout-button"
+//             onClick={() => {
+//               setLogoutMessage("✅ Logout successful!");
+//               localStorage.removeItem("token");
+//               localStorage.removeItem("username");
+//               setTimeout(() => {
+//                 setLogoutMessage("");
+//                 navigate("/login");
+//               }, 1500); // แสดงข้อความ 1.5 วินาที
+//             }}
+//           >
+//             Logout
+//           </button>
+//         </div>
+//       </div>
+
+//       {/* ✅ Blockly Workspace */}
+//       <div className="blockly-container">
+//         <div className="blockly-workspace" ref={blocklyDiv}></div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default Main;
+
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as Blockly from "blockly";
 import { javascriptGenerator } from "blockly/javascript";
@@ -13,15 +169,18 @@ const Main = () => {
   const navigate = useNavigate();
   const blocklyDiv = useRef(null);
   const workspace = useRef(null);
+  const [logoutMessage, setLogoutMessage] = useState("");
+  const [username, setUsername] = useState("");
 
   useEffect(() => {
-    // เคลียร์ workspace เก่า
+    const storedUsername = localStorage.getItem("username");
+    if (storedUsername) setUsername(storedUsername);
+
     if (workspace.current) {
       workspace.current.dispose();
       workspace.current = null;
     }
 
-    // Inject Blockly
     workspace.current = Blockly.inject(blocklyDiv.current, {
       toolbox: `
         <xml>
@@ -49,11 +208,16 @@ const Main = () => {
 
     const allBlocks = workspace.current.getAllBlocks(false);
     let hasSetUrl = false;
-    let hasCheckBlock = false;
+    const resultKeysToCheck = [];
 
     allBlocks.forEach((block) => {
       if (block.type === "set_url") hasSetUrl = true;
-      if (block.type.startsWith("check_")) hasCheckBlock = true;
+
+      if (block.type === "check_sql_injection") resultKeysToCheck.push("sqlResults");
+      if (block.type === "check_xss") resultKeysToCheck.push("xssResults");
+      if (block.type === "check_csrf") resultKeysToCheck.push("csrfResults");
+      if (block.type === "check_idor") resultKeysToCheck.push("idorResults");
+      if (block.type === "check_bac") resultKeysToCheck.push("bacResults");
     });
 
     if (!hasSetUrl) {
@@ -61,54 +225,54 @@ const Main = () => {
       return;
     }
 
-    if (!hasCheckBlock) {
+    if (resultKeysToCheck.length === 0) {
       alert("⚠️ Please add at least one security check before generating code.");
       return;
     }
 
-    // ✅ เคลียร์ผลลัพธ์แต่ละประเภทก่อนรันใหม่
-    localStorage.removeItem("xssResults");
-    localStorage.removeItem("csrfResults");
-    localStorage.removeItem("sqlResults");
-    localStorage.removeItem("idorResults");
-    localStorage.removeItem("bacResults");
+    // ✅ ล้างเฉพาะ result ที่ใช้
+    resultKeysToCheck.forEach((key) => localStorage.removeItem(key));
 
     const code = javascriptGenerator.workspaceToCode(workspace.current);
     console.log("Generated Code:", code);
 
     try {
-      eval(code); // 👈 จำไว้ว่าควรใช้ใน dev เท่านั้น
-
-      setTimeout(() => {
-        const xss = JSON.parse(localStorage.getItem("xssResults") || "[]");
-        const csrf = JSON.parse(localStorage.getItem("csrfResults") || "[]");
-        const sql = JSON.parse(localStorage.getItem("sqlResults") || "[]");
-        const idor = JSON.parse(localStorage.getItem("idorResults") || "[]");
-        const bac = JSON.parse(localStorage.getItem("bacResults") || "[]");
-
-        const total =
-          xss.length + csrf.length + sql.length + idor.length + bac.length;
-
-        if (total === 0) {
-          alert("⚠️ No test results found. Please ensure the test has run.");
-          return;
-        }
-
-        alert("✅ Code Executed Successfully!");
-        navigate("/dashboard");
-      }, 30000); // ⏳ เผื่อเวลา API ทดสอบทั้งหมด
+      eval(code); // ✅ รันโค้ด
+      waitForResults(resultKeysToCheck); // ✅ เฝ้ารอเฉพาะ block ที่ใช้งานจริง
     } catch (error) {
       console.error("❌ Execution Error:", error);
       alert("Error executing generated code!");
     }
   };
 
+  const waitForResults = (keys) => {
+    const startTime = Date.now();
+
+    const interval = setInterval(() => {
+      const allReady = keys.every((key) => {
+        const val = localStorage.getItem(key);
+        return val && JSON.parse(val).length > 0;
+      });
+
+      if (allReady) {
+        clearInterval(interval);
+        alert("✅ Code Execute successfully!");
+        navigate("/dashboard");
+      }
+
+      if (Date.now() - startTime > 60000) {
+        clearInterval(interval);
+        alert("⚠️ Timeout: Some test results did not complete in time.");
+      }
+    }, 1000);
+  };
+
   return (
     <div className="main-container">
-      {/* ✅ Navigation Bar */}
       <div className="navbar">
         <div className="navbar-left">
           <h1>Website Security Testing 🚀</h1>
+          <h1>Welcome, {username} 👋</h1>
           <button className="dashboard-button" onClick={() => navigate("/dashboard")}>
             Dashboard
           </button>
@@ -120,8 +284,13 @@ const Main = () => {
           <button
             className="logout-button"
             onClick={() => {
+              setLogoutMessage("✅ Logout successful!");
               localStorage.removeItem("token");
-              navigate("/login");
+              localStorage.removeItem("username");
+              setTimeout(() => {
+                setLogoutMessage("");
+                navigate("/login");
+              }, 1500);
             }}
           >
             Logout
@@ -129,7 +298,6 @@ const Main = () => {
         </div>
       </div>
 
-      {/* ✅ Blockly Workspace */}
       <div className="blockly-container">
         <div className="blockly-workspace" ref={blocklyDiv}></div>
       </div>

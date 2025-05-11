@@ -1,4 +1,4 @@
-
+ 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -204,8 +204,10 @@ const chartData = (() => {
 
     if (typeof value === "object" && value !== null && "vulnerability" in value) {
       lines.push(`${key}: ${value.vulnerability}`);
-      if (value.info) {
-        lines.push(`→ ${value.info}`);
+      if (  typeof value.info === "string" &&
+            value.info.trim() !== "" &&
+            value.info !== "/") {
+        lines.push(`${value.info}`);
       }
     } else if (key === "messages") {
       if (Array.isArray(value)) {
