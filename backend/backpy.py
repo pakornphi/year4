@@ -139,8 +139,7 @@ def test_broken_access_control():
 
         # return as JSON array
         return jsonify({
-            "tested_url": target_url,
-            "report": lines
+            "results": lines
         }), 200
 
     except Exception as e:
