@@ -30,11 +30,15 @@ class CSRFTester:
         self.session.mount('http://', adapter)
         self.session.mount('https://', adapter)
 
-        # Auto-discover test methods
+        # Explicitly map test names to methods for clearer output
         self.tests = {
-            name: getattr(self, name)
-            for name in dir(self)
-            if name.startswith('test_')
+            'Missing CSRF Token':               self.test_csrf_presence,
+            'CSRF Token Reuse Allowed':         self.test_csrf_reuse,
+            'Malformed CSRF Token Accepted':    self.test_token_format,
+            'Static CSRF Token (No Rotation)':  self.test_dynamic_token,
+            'Missing Double-Submit Cookie':     self.test_double_submit_cookie,
+            'Token Expiration Not Enforced':    self.test_expiration,
+            'Session Fixation Protection':      self.test_session_fixation,
         }
 
     def _get(self, path: str):
@@ -69,24 +73,18 @@ class CSRFTester:
                 vuln, info = fn()
                 results[name] = (vuln, info)
                 # Print only the result for the test
-                if vuln is None:
-                    print(f"  {name:25s} → vulnerability:None")
-                else:
-                    print(f"  {name:25s} → vulnerability:{vuln}")
-            except Exception as e:
-                # Suppress errors from being logged
+                status = vuln if vuln is not None else 'None'
+                line = f"  {name:30s} → vulnerability:{status}"
+                if info is not None:
+                    line += f"   info={info}"
+                print(line)
+            except Exception:
                 results[name] = (None, None)
-                print(f"  {name:25s} → vulnerability:None")  # If error occurs, show None
+                print(f"  {name:30s} → vulnerability:None")
         return results
 
     def print_results(self):
-        results = self.run_all()
-        for name, (vuln, info) in results.items():
-            # Only print the results
-            line = f"{name:25s} → vulnerability:{vuln if vuln is not None else 'None'}"
-            if info is not None:
-                line += f"  info={info}"
-            print(line)
+        self.run_all()
 
     # === TESTS BELOW ===
     def test_csrf_presence(self):
