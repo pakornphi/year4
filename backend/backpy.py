@@ -80,7 +80,6 @@ def test_xss():
 
 
 
-
 # SQL Injection Tester class is used in this route
 
 @app.route('/api/test-sql', methods=['POST'])

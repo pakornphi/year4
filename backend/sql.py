@@ -2,10 +2,7 @@
 import sys
 import requests
 from urllib.parse import urljoin
-<<<<<<< HEAD
-=======
 from typing import Optional, Tuple
->>>>>>> 8120034 (bac xss)
 
 class SQLInjectionTester:
     """
@@ -45,11 +42,7 @@ class SQLInjectionTester:
         resp.raise_for_status()
         return resp
 
-<<<<<<< HEAD
-    def _test_payload(self, payload: str) -> tuple[bool, str | None]:
-=======
     def _test_payload(self, payload: str) -> Tuple[bool, Optional[str]]:
->>>>>>> 8120034 (bac xss)
         """
         Test a single payload against all endpoints. Returns (vulnerable, payload) if error or SQL indication.
         """
@@ -114,8 +107,4 @@ if __name__ == '__main__':
     base = sys.argv[1]
     endpoints = sys.argv[2:] if len(sys.argv) > 2 else None
     tester = SQLInjectionTester(base_url=base, endpoints=endpoints)
-<<<<<<< HEAD
     tester.run_all()
-=======
-    tester.run_all()
->>>>>>> 8120034 (bac xss)

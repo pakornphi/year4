@@ -107,8 +107,4 @@ if __name__ == '__main__':
         print("Usage: python bac_improved.py <target_url>")
     else:
         tester = BrokenAccessControlTester(sys.argv[1])
-<<<<<<< HEAD
         tester.run_all()
-=======
-        tester.run_all()
->>>>>>> 8120034 (bac xss)
