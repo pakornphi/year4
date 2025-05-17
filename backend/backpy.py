@@ -13,32 +13,28 @@ CORS(app)  # Enable CORS for frontend-backend communication
 # CSRF Tester class is used in this route
 @app.route('/api/test-csrf', methods=['POST'])
 def test_csrf():
-    data = request.get_json()  # Get the JSON data from the POST request
-    base_url = data.get('url')  # The URL to test
+    data = request.get_json()
+    base_url = data.get('url')
 
     if not base_url:
         return jsonify({"error": "URL is required"}), 400
 
-    # Initialize the CSRFTester with the provided base_url
+    print(f"✅ /api/test-csrf received for: {base_url}")
     tester = CSRFTester(base_url=base_url)
+    raw_results = tester.run_all()
 
-    # Run the CSRF tests
-    results = tester.run_all()
+    # ✅ จัดรูปแบบเป็นข้อความเพื่อใช้แสดงผลและเก็บใน localStorage
+    formatted = []
+    for name, (vuln, info) in raw_results.items():
+        line = f"{name:30s} → vulnerability:{vuln}"
+        if info:
+            line += f"   info={info}"
+        formatted.append(line)
 
-    # Initialize result_data with the tested URL
-    result_data = {
-        "tested_url": base_url  # Include the URL in the response data
-    }
-
-    # Add results for each test
-    for name, (vuln, info) in results.items():
-        result_data[name] = {
-            "vulnerability": vuln,
-            "info": info
-        }
-
-    # Return the test results as a JSON response
-    return jsonify(result_data)
+    return jsonify({
+        "tested_url": base_url,
+        "results": formatted   # ✅ list[string]
+    }), 200
 
 
 # XSS Tester class is used in this route
@@ -46,73 +42,81 @@ def test_csrf():
 def test_xss():
     data = request.get_json()
     target_url = data.get('url')
-    print("✅ /api/test-xss called")
+    print(f"✅ /api/test-xss called for: {target_url}")
 
     if not target_url:
         return jsonify({'error': 'URL is required'}), 400
 
     try:
+        # ✅ ระบุ payload.txt ไว้ตรงนี้โดยตรง
         tester = XSSTester(
             base_url=target_url,
-            payload_file='payload.txt',
+            payload_file='payload.txt',   # ← อย่าลืมให้ไฟล์นี้อยู่ใน backend folder
             timeout=3,
             cooldown=0.5,
             workers=10
         )
 
-        raw_results = tester.run_all(max_workers=tester.workers)
+        raw_results = tester.run_all()
+        print(f"📦 Raw Results: {raw_results}")
 
-        for name, payloads in raw_results.items():
-            if name == 'vulnerability':
-                print(f"vulnerability: {'YES' if payloads else 'NO'}")
-            else:
-                print(f"[INFO] {name}: {len(payloads)} payloads triggered vulnerability")
-                print(f"{name}: {len(payloads)} vulnerable payload(s)")
-
+        # ✅ แปลง raw_results เป็นโครงสร้าง JSON ที่ dashboard ใช้ได้
         results = {
-            name: {'count': len(payloads), 'payloads': payloads}
-            for name, payloads in raw_results.items() if name != 'vulnerability'
+            name: {
+                'count': count,
+                'payloads': []  # หรือใส่ actual payload ถ้ามี logic
+            }
+            for name, count in raw_results.items()
+            if name != 'vulnerability'
         }
+
         results['vulnerability'] = raw_results.get('vulnerability', False)
 
         return jsonify({'results': results}), 200
 
     except Exception as e:
+        print(f"❌ XSS test failed: {e}")
         return jsonify({'error': f'XSS test failed: {str(e)}'}), 500
 
+
+
+
 # SQL Injection Tester class is used in this route
+
 @app.route('/api/test-sql', methods=['POST'])
 def test_sql_injection():
-    data = request.get_json()
-    target_url = data.get('url')
-
-    if not target_url:
-        return jsonify({'error': 'URL is required'}), 400
-
+    print("✅ /api/test-sql called")
     try:
+        data = request.get_json(force=True)
+        target_url = data.get('url')
+        print("➡️ Target URL:", target_url)
+
+        if not target_url:
+            return jsonify({'error': 'URL is required'}), 400
+
         tester = SQLInjectionTester(
             base_url=target_url,
-            endpoints=['/', '/login'],  # Adjust according to your target app's endpoints
             timeout=5.0
         )
-        
-        # Run the SQL Injection test
-        vuln_found, payload = tester.test_sql_injection()
-        
-        # Return results based on whether a vulnerability was found
-        if vuln_found:
-            return jsonify({
-                'vulnerable': True,
-                'payload': payload
-            }), 200
-        else:
-            return jsonify({
-                'vulnerable': False,
-                'message': 'No vulnerabilities detected'
-            }), 200
+
+        results = tester.run_all()  # ✅ ใช้ run_all ไม่ใช่ run_tests
+
+        # format เป็น string[] เพื่อแสดงผล
+        formatted = []
+        for name, is_vuln in results.items():
+            line = f"{name:35s} → vulnerability:{is_vuln[0]}"
+            formatted.append(line)
+
+        return jsonify({
+            'tested_url': target_url,
+            'results': formatted
+        }), 200
 
     except Exception as e:
-        return jsonify({'error': f'SQL Injection test failed: {str(e)}'}), 500
+        print("❌ SQL test failed:", e)
+        return jsonify({'error': f'SQL Injection test failed: {e}'}), 500
+
+
 
 # New route for Broken Access Control testing
 @app.route('/api/test-broken-access-control', methods=['POST'])
@@ -124,19 +128,25 @@ def test_broken_access_control():
         return jsonify({'error': 'URL is required'}), 400
 
     try:
-        # Initialize the BrokenAccessControlTester with the provided base_url
         tester = BrokenAccessControlTester(base_url=target_url)
+        raw_results = tester.run_all()
 
-        # Run all tests
-        results = tester.run_all()
+        formatted = []
+        for name, details in raw_results.items():
+            if isinstance(details, list):
+                count = sum(1 for d in details if d[0] is True)
+                status = "True" if count > 0 else "False"
+                formatted.append(f"{name:30s} → vulnerability:{status}")
+                for d in details:
+                    formatted.append(f"    {d[1]}")
 
-        # Return the results as a JSON response
-        return jsonify({'results': results}), 200
+        return jsonify({
+            "tested_url": target_url,
+            "results": formatted  # ✅ ชัดเจนเลย
+        }), 200
 
     except Exception as e:
-        return jsonify({'error': f'Broken Access Control test failed: {str(e)}'}), 500
-    
-
+        return jsonify({'error': f'BAC test failed: {str(e)}'}), 500
 
 @app.route('/api/test-idor', methods=['POST'])
 def test_idor():
@@ -148,11 +158,26 @@ def test_idor():
 
     try:
         tester = IDORSummarizedTester(url=target_url)
-        results = tester.test()
-        return jsonify({'results': results}), 200
+        raw_results = tester.run_all()  # {'id': True, 'user_id': True, ...}
+
+        messages = []
+        for param, is_vuln in raw_results.items():
+            label = tester.descriptive_names.get(param, param).ljust(30)
+            status = 'True' if is_vuln else 'False'
+            line = f"{label} → vulnerability:{status}"
+            messages.append(line)
+
+        is_vulnerable = any(v for v in raw_results.values())
+
+        return jsonify({
+            "tested_url": target_url,
+            "idor_vulnerable": is_vulnerable,
+            "messages": messages
+        }), 200
 
     except Exception as e:
         return jsonify({'error': f'IDOR test failed: {str(e)}'}), 500
+
     
 if __name__ == '__main__':
     app.run(debug=True)

@@ -76,4 +76,8 @@ if __name__ == '__main__':
         end=args.end,
         timeout=args.timeout
     )
+<<<<<<< HEAD
     tester.run_all()
+=======
+    tester.run_all()
+>>>>>>> 8120034 (bac xss)

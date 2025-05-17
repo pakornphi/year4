@@ -40,28 +40,13 @@ javascriptGenerator.forBlock["check_sql_injection"] = function () {
     })
     .then(response => response.json())
     .then(data => {
-      const results = data.results || {};
-      const messages = [];
-
-      Object.entries(results).forEach(([payload, isVuln]) => {
-        messages.push(\`\${payload} - vulnerability : \${isVuln}\`);
-      });
-
-      const entry = {
-        url,
-        tested_url: url,
-        vulnerable: data.vulnerable || false,
-        messages
+      const result = {
+        tested_url: data.tested_url,
+        results: data.results || []
       };
 
-      let allResults = JSON.parse(localStorage.getItem("sqlResults")) || [];
-      const index = allResults.findIndex(r => r.tested_url === url);
-      if (index !== -1) {
-        allResults[index] = { ...allResults[index], ...entry };
-      } else {
-        allResults.push(entry);
-      }
-
+      let allResults = JSON.parse(localStorage.getItem("sqlResults") || "[]");
+      allResults.push(result);
       localStorage.setItem("sqlResults", JSON.stringify(allResults));
       console.log("✅ Saved SQL Injection results for", url);
     })
@@ -87,17 +72,15 @@ javascriptGenerator.forBlock["check_xss"] = function () {
 
     Object.entries(results).forEach(([key, value]) => {
       if (key === "vulnerability") return;
-      // value = { count: 2, payloads: ["..."] }
       entry[\`test_\${key}\`] = {
         info: value.payloads?.[0] || null,
         vulnerability: value.count > 0
       };
     });
 
-    // เพิ่มผลรวม (เหมือนสรุป vulnerability)
     entry["xss_vulnerable"] = results.vulnerability ?? null;
 
-    let allResults = JSON.parse(localStorage.getItem("xssResults")) || [];
+    let allResults = JSON.parse(localStorage.getItem("xssResults") || "[]");
     const index = allResults.findIndex(r => r.tested_url === url);
     if (index !== -1) {
       allResults[index] = { ...allResults[index], ...entry };
@@ -115,6 +98,7 @@ javascriptGenerator.forBlock["check_xss"] = function () {
 };
 
 
+
 // ✅ CSRF
 javascriptGenerator.forBlock["check_csrf"] = function () {
   return `
@@ -126,17 +110,15 @@ javascriptGenerator.forBlock["check_csrf"] = function () {
       })
       .then(response => response.json())
       .then(data => {
-        const result = { tested_url: url };
-        Object.entries(data).forEach(([key, value]) => {
-          if (key.startsWith("test_")) {
-            result[key] = value;
-          }
-        });
+        const result = {
+          tested_url: data.tested_url,
+          results: data.results || []
+        };
 
-        let results = JSON.parse(localStorage.getItem("csrfResults")) || [];
+        let results = JSON.parse(localStorage.getItem("csrfResults") || "[]");
         results.push(result);
         localStorage.setItem("csrfResults", JSON.stringify(results));
-        console.log("✅ Saved CSRF result for", url);
+        console.log("✅ Saved formatted CSRF result for", url);
       })
       .catch(error => {
         console.error("❌ Failed to test CSRF:", error);
@@ -155,26 +137,18 @@ javascriptGenerator.forBlock["check_idor"] = function () {
     })
     .then(response => response.json())
     .then(data => {
-      const results = data?.results || [];
-      const messages = [];
-
-      results.forEach(entry => {
-        const [param, result] = Object.entries(entry)[0];
-        messages.push(\`\${param}: \${result}\`);
-      });
-
-      const isVulnerable = messages.some(m => m.includes("Potential IDOR"));
-      messages.push(\`vulnerability: \${isVulnerable ? "YES" : "NO"}\`);
+      const messages = data.messages || [];
+      const isVulnerable = data.idor_vulnerable;
 
       const newEntry = {
         url: url,
-        tested_url: url,
+        tested_url: data.tested_url || url,
         idor_vulnerable: isVulnerable,
         messages
       };
 
-      let allResults = JSON.parse(localStorage.getItem("idorResults")) || [];
-      const index = allResults.findIndex(r => r.url === url);
+      let allResults = JSON.parse(localStorage.getItem("idorResults") || "[]");
+      const index = allResults.findIndex(r => r.tested_url === newEntry.tested_url);
       if (index !== -1) {
         allResults[index] = { ...allResults[index], ...newEntry };
       } else {
@@ -190,6 +164,9 @@ javascriptGenerator.forBlock["check_idor"] = function () {
   `;
 };
 
+
+
+
 // ✅ BAC
 javascriptGenerator.forBlock["check_bac"] = function () {
   return `
@@ -200,35 +177,13 @@ javascriptGenerator.forBlock["check_bac"] = function () {
     })
     .then(response => response.json())
     .then(data => {
-      const results = data?.results || {};
-      const messages = [];
-
-      Object.entries(results).forEach(([testName, details]) => {
-        if (Array.isArray(details)) {
-          const count = details.filter(item => item[0] === true).length;
-          messages.push(\`[INFO] \${testName}: \${count} payloads triggered vulnerability\`);
-          messages.push(\`\${testName}: \${count} vulnerable payload(s)\`);
-        }
-      });
-
-      const isVulnerable = messages.some(m => m.includes("vulnerable payload(s)") && !m.includes(": 0 "));
-      messages.push(\`vulnerability: \${isVulnerable ? "YES" : "NO"}\`);
-
-      const newEntry = {
-        url: url,
-        tested_url: url,
-        bac_vulnerable: isVulnerable,
-        messages
+      const result = {
+        tested_url: data.tested_url,
+        results: data.results || []  // ✅ ต้องเป็น array of strings
       };
 
-      let allResults = JSON.parse(localStorage.getItem("bacResults")) || [];
-      const index = allResults.findIndex(r => r.url === url);
-      if (index !== -1) {
-        allResults[index] = { ...allResults[index], ...newEntry };
-      } else {
-        allResults.push(newEntry);
-      }
-
+      let allResults = JSON.parse(localStorage.getItem("bacResults") || "[]");
+      allResults.push(result);
       localStorage.setItem("bacResults", JSON.stringify(allResults));
       console.log("✅ Saved BAC results for", url);
     })
@@ -237,3 +192,4 @@ javascriptGenerator.forBlock["check_bac"] = function () {
     });
   `;
 };
+

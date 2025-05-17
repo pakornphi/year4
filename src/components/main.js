@@ -176,11 +176,29 @@ const Main = () => {
     const storedUsername = localStorage.getItem("username");
     if (storedUsername) setUsername(storedUsername);
 
+    // ✅ ล้าง run-count ของวันเก่า
+    const cleanOldRunData = () => {
+      const user = storedUsername || "anonymous";
+      const today = new Date().toISOString().split("T")[0];
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith(`runTimestamps_${user}_`)) {
+          const keyDate = key.split("_").pop();
+          if (keyDate !== today) {
+            localStorage.removeItem(key);
+          }
+        }
+      });
+    };
+
+    cleanOldRunData();
+
+    // ✅ เคลียร์ workspace เก่า
     if (workspace.current) {
       workspace.current.dispose();
       workspace.current = null;
     }
 
+    // ✅ สร้าง Blockly workspace ใหม่
     workspace.current = Blockly.inject(blocklyDiv.current, {
       toolbox: `
         <xml>
@@ -200,7 +218,48 @@ const Main = () => {
     Blockly.svgResize(workspace.current);
   }, [navigate]);
 
+  // ✅ Utility
+  const getTodayKey = () => {
+    const today = new Date().toISOString().split("T")[0];
+    const user = localStorage.getItem("username") || "anonymous";
+    return `runTimestamps_${user}_${today}`;
+  };
+
+    const getRemainingTimeMessage = () => {
+    const timestamps = JSON.parse(localStorage.getItem(getTodayKey()) || "[]");
+    if (timestamps.length < 1000) return null;
+
+    // ⏰ ตั้งเวลา reset ที่เที่ยงคืนวันถัดไป
+    const now = new Date();
+    const tomorrowMidnight = new Date();
+    tomorrowMidnight.setHours(24, 0, 0, 0); // 24:00 = เที่ยงคืนถัดไป
+
+    const diffMs = tomorrowMidnight - now;
+    if (diffMs <= 0) return null;
+
+    const minutes = Math.ceil(diffMs / 1000 / 60);
+    return `⏳ You've reached the 3-run limit today. Try again in ${minutes} minute(s).`;
+  };
+
+  const canRunTest = () => {
+    const timestamps = JSON.parse(localStorage.getItem(getTodayKey()) || "[]");
+    return timestamps.length < 1000;
+  };
+
+  const recordRun = () => {
+    const key = getTodayKey();
+    const timestamps = JSON.parse(localStorage.getItem(key) || "[]");
+    timestamps.push(new Date().toISOString());
+    localStorage.setItem(key, JSON.stringify(timestamps));
+  };
+
   const generateCode = () => {
+    const remainingMessage = getRemainingTimeMessage();
+    if (!canRunTest()) {
+      alert(remainingMessage || "⚠️ You've reached the maximum number of test runs for today.");
+      return;
+    }
+
     if (!workspace.current || workspace.current.getAllBlocks(false).length === 0) {
       alert("⚠️ No blocks found! Please add blocks before generating code.");
       return;
@@ -212,7 +271,6 @@ const Main = () => {
 
     allBlocks.forEach((block) => {
       if (block.type === "set_url") hasSetUrl = true;
-
       if (block.type === "check_sql_injection") resultKeysToCheck.push("sqlResults");
       if (block.type === "check_xss") resultKeysToCheck.push("xssResults");
       if (block.type === "check_csrf") resultKeysToCheck.push("csrfResults");
@@ -230,15 +288,18 @@ const Main = () => {
       return;
     }
 
-    // ✅ ล้างเฉพาะ result ที่ใช้
-    resultKeysToCheck.forEach((key) => localStorage.removeItem(key));
+    // ✅ ล้างผลลัพธ์เก่าทุกประเภท
+    ["sqlResults", "xssResults", "csrfResults", "idorResults", "bacResults"].forEach((key) =>
+      localStorage.removeItem(key)
+    );
 
     const code = javascriptGenerator.workspaceToCode(workspace.current);
     console.log("Generated Code:", code);
 
     try {
-      eval(code); // ✅ รันโค้ด
-      waitForResults(resultKeysToCheck); // ✅ เฝ้ารอเฉพาะ block ที่ใช้งานจริง
+      recordRun();
+      eval(code);
+      waitForResults(resultKeysToCheck);
     } catch (error) {
       console.error("❌ Execution Error:", error);
       alert("Error executing generated code!");
@@ -256,7 +317,7 @@ const Main = () => {
 
       if (allReady) {
         clearInterval(interval);
-        alert("✅ Code Execute successfully!");
+        alert("✅ Code executed successfully!");
         navigate("/dashboard");
       }
 
