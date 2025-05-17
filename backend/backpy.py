@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask import Response
 from csrf2 import CSRFTester  # Assuming CSRFTester is in csrf_tester.py
 from xss import XSSTester
 from sql import SQLInjectionTester  # Import SQLInjectionTester from sql.py
@@ -122,27 +123,22 @@ def test_sql_injection():
 def test_broken_access_control():
     data = request.get_json()
     target_url = data.get('url')
-
     if not target_url:
         return jsonify({'error': 'URL is required'}), 400
 
     try:
-        tester = BrokenAccessControlTester(base_url=target_url)
+        tester      = BrokenAccessControlTester(base_url=target_url)
         raw_results = tester.run_all()
 
-        formatted = []
+        # build only the 4 summary lines + header
+        lines = [f"Testing URL: {target_url}", ""]
         for name, details in raw_results.items():
-            if isinstance(details, list):
-                count = sum(1 for d in details if d[0] is True)
-                status = "True" if count > 0 else "False"
-                formatted.append(f"{name:30s} → vulnerability:{status}")
-                for d in details:
-                    formatted.append(f"    {d[1]}")
+            count  = sum(1 for ok, _ in details if ok)
+            status = "True" if count > 0 else "False"
+            lines.append(f"  {name:30s} → vulnerability:{status}")
 
-        return jsonify({
-            "tested_url": target_url,
-            "results": formatted  # ✅ ชัดเจนเลย
-        }), 200
+        text = "\n".join(lines) + "\n"
+        return Response(text, mimetype='text/plain')
 
     except Exception as e:
         return jsonify({'error': f'BAC test failed: {str(e)}'}), 500

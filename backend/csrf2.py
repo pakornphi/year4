@@ -224,4 +224,4 @@ if __name__ == '__main__':
         endpoints=args.endpoints
     )
 
-    tester.print_results()
+    tester.print_results() 
