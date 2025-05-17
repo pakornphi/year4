@@ -137,8 +137,11 @@ def test_broken_access_control():
             status = "True" if count > 0 else "False"
             lines.append(f"  {name:30s} → vulnerability:{status}")
 
-        text = "\n".join(lines) + "\n"
-        return Response(text, mimetype='text/plain')
+        # return as JSON array
+        return jsonify({
+            "tested_url": target_url,
+            "report": lines
+        }), 200
 
     except Exception as e:
         return jsonify({'error': f'BAC test failed: {str(e)}'}), 500
