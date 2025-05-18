@@ -115,4 +115,4 @@ def dom_xss():
     return html
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)  # Run in debug mode for easy testing
+    app.run(debug=True, port=9000)  # Run in debug mode for easy testing

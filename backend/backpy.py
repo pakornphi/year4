@@ -7,9 +7,24 @@ from sql import SQLInjectionTester  # Import SQLInjectionTester from sql.py
 import logging
 from BAC import BrokenAccessControlTester  # Import the BrokenAccessControlTester from BAC.py
 from Idor import IDORSummarizedTester  # ← เพิ่มส่วน import นี้
+import requests
+import os
+import importlib.util
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend-backend communication
+
+def load_payloads_from_py(path: str = 'payloads.py') -> list[str]:
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"{path} does not exist")
+    spec = importlib.util.spec_from_file_location("payloads_module", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    if not hasattr(mod, 'PAYLOADS'):
+        raise AttributeError(f"No PAYLOADS in {path}")
+    return getattr(mod, 'PAYLOADS')
+
 
 # CSRF Tester class is used in this route
 @app.route('/api/test-csrf', methods=['POST'])
@@ -41,45 +56,44 @@ def test_csrf():
 # XSS Tester class is used in this route
 @app.route('/api/test-xss', methods=['POST'])
 def test_xss():
-    data = request.get_json()
+    data = request.get_json(force=True)
     target_url = data.get('url')
-    print(f"✅ /api/test-xss called for: {target_url}")
-
     if not target_url:
         return jsonify({'error': 'URL is required'}), 400
 
     try:
-        # ✅ ระบุ payload.txt ไว้ตรงนี้โดยตรง
+        payloads = load_payloads_from_py('payloads.py')
+        payload_count = len(payloads)
+
         tester = XSSTester(
             base_url=target_url,
-            payload_file='payload.txt',   # ← อย่าลืมให้ไฟล์นี้อยู่ใน backend folder
+            payloads=payloads,
             timeout=3,
             cooldown=0.5,
             workers=10
         )
+        raw_results = tester.run_all()  # dict: test_name → list of successful payloads
 
-        raw_results = tester.run_all()
-        print(f"📦 Raw Results: {raw_results}")
+        formatted = []
+        detailed = {}  # name: list of successful payloads
 
-        # ✅ แปลง raw_results เป็นโครงสร้าง JSON ที่ dashboard ใช้ได้
-        results = {
-            name: {
-                'count': count,
-                'payloads': []  # หรือใส่ actual payload ถ้ามี logic
-            }
-            for name, count in raw_results.items()
-            if name != 'vulnerability'
-        }
+        for name, hits in raw_results.items():
+            vuln_flag = bool(hits)
+            formatted.append(f"{name:35s} → vulnerability:{vuln_flag}")
+            if vuln_flag:
+                detailed[name] = hits  # List of payloads that worked
+            else:
+                detailed[name] = []   # Empty list if no success
 
-        results['vulnerability'] = raw_results.get('vulnerability', False)
-
-        return jsonify({'results': results}), 200
+        return jsonify({
+            'tested_url': target_url,
+            'payload_count': payload_count,
+            'results': formatted,
+            'successful_payloads': detailed  # ✅ Add detailed payload info
+        }), 200
 
     except Exception as e:
-        print(f"❌ XSS test failed: {e}")
-        return jsonify({'error': f'XSS test failed: {str(e)}'}), 500
-
-
+        return jsonify({'error': f'XSS test failed: {e}'}), 500
 
 # SQL Injection Tester class is used in this route
 
@@ -175,6 +189,5 @@ def test_idor():
     except Exception as e:
         return jsonify({'error': f'IDOR test failed: {str(e)}'}), 500
 
-    
 if __name__ == '__main__':
     app.run(debug=True)
