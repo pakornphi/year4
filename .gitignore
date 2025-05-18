@@ -22,3 +22,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 *.pyc
+*.pyc
+backend/__pycache__/BAC.cpython-39.pyc
+backend/__pycache__/csrf2.cpython-39.pyc
+backend/__pycache__/Idor.cpython-39.pyc
+backend/__pycache__/sql.cpython-39.pyc
+backend/__pycache__/xss.cpython-39.pyc
