@@ -230,10 +230,10 @@ class XSSTester:
         self.payload = payload
         return method()
 
-    def run_all(self, max_workers=None) -> str:
+    def run_all(self, max_workers=None) -> dict:
         """
         Run each test_* method in parallel across payloads, then
-        return the formatted summary report as a single string.
+        return a dict mapping each test name to the list of successful payloads.
         """
         results = {}
         methods = [
@@ -259,7 +259,7 @@ class XSSTester:
         )
 
         # Format and return the summary string
-        return self._format_results(results)
+        return results
 
     def print_results(self, results):
         """
@@ -307,5 +307,5 @@ if __name__ == '__main__':
         cooldown=args.cooldown,
         workers=args.workers
     )
-    results = tester.run_all(max_workers=args.workers)
-    tester.print_results(results)
+    summary = tester.run_all(max_workers=args.workers)
+    print(summary)

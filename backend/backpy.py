@@ -62,9 +62,10 @@ def test_xss():
         return jsonify({'error': 'URL is required'}), 400
 
     try:
+        # 1) load payloads
         payloads = load_payloads_from_py('payloads.py')
-        payload_count = len(payloads)
 
+        # 2) run the tester (now returns a dict)
         tester = XSSTester(
             base_url=target_url,
             payloads=payloads,
@@ -72,28 +73,34 @@ def test_xss():
             cooldown=0.5,
             workers=10
         )
-        raw_results = tester.run_all()  # dict: test_name → list of successful payloads
+        raw_results = tester.run_all()   # dict: { test_name: [hits…], … }
 
-        formatted = []
-        detailed = {}  # name: list of successful payloads
+        # 3) build the lines array
+        labels = {
+            'test_query_parameter_xss': 'Query Parameter XSS',
+            'test_form_input_xss':      'Form Input XSS',
+            'test_header_xss':          'Header XSS',
+            'test_comment_xss':         'Comment Field XSS',
+            'test_profile_field_xss':   'Profile Field XSS',
+            'test_file_upload_xss':     'File Upload XSS',
+        }
 
-        for name, hits in raw_results.items():
-            vuln_flag = bool(hits)
-            formatted.append(f"{name:35s} → vulnerability:{vuln_flag}")
-            if vuln_flag:
-                detailed[name] = hits  # List of payloads that worked
-            else:
-                detailed[name] = []   # Empty list if no success
+        lines = []
+        for test_name, hits in raw_results.items():
+            label = labels.get(test_name, test_name).ljust(30)
+            # use None if you want “vulnerability:None” when no verdict,
+            # or boolean if you prefer True/False
+            vuln = None if hits is None else bool(hits)
+            lines.append(f"{label} → vulnerability:{vuln}")
 
         return jsonify({
-            'tested_url': target_url,
-            'payload_count': payload_count,
-            'results': formatted,
-            'successful_payloads': detailed  # ✅ Add detailed payload info
+            "tested_url": target_url,
+            "results": lines
         }), 200
 
     except Exception as e:
         return jsonify({'error': f'XSS test failed: {e}'}), 500
+
 
 # SQL Injection Tester class is used in this route
 
