@@ -230,9 +230,10 @@ class XSSTester:
         self.payload = payload
         return method()
 
-    def run_all(self, max_workers=None):
+    def run_all(self, max_workers=None) -> str:
         """
-        Run each test_* method in parallel across payloads.
+        Run each test_* method in parallel across payloads, then
+        return the formatted summary report as a single string.
         """
         results = {}
         methods = [
@@ -256,13 +257,21 @@ class XSSTester:
         results['vulnerability'] = any(
             results[test] for test in results if test != 'vulnerability'
         )
-        return results
+
+        # Format and return the summary string
+        return self._format_results(results)
 
     def print_results(self, results):
         """
-        Display the results of the XSS testing in a formatted way.
+        Display the formatted summary (same as run_all() returns).
         """
-        print(f"Testing URL: {self.base_url}")
+        print(self._format_results(results))
+
+    def _format_results(self, results) -> str:
+        """
+        Build and return the multi-line summary report.
+        """
+        lines = [f"Testing URL: {self.base_url}"]
         tests = [
             ('test_query_parameter_xss', 'Query Parameter XSS'),
             ('test_form_input_xss',      'Form Input XSS'),
@@ -275,8 +284,8 @@ class XSSTester:
             vuln_list = results.get(key, [])
             status = 'True' if vuln_list else 'False'
             count = len(vuln_list)
-            print(f"  {label:<28} → vulnerability:{status:<5} count={count}")
-
+            lines.append(f"  {label:<28} → vulnerability:{status:<5} count={count}")
+        return "\n".join(lines)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="XSS Testing Script")
