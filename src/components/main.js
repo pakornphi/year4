@@ -226,7 +226,7 @@ const Main = () => {
 
     const getRemainingTimeMessage = () => {
     const timestamps = JSON.parse(localStorage.getItem(getTodayKey()) || "[]");
-    if (timestamps.length < 1000) return null;
+    if (timestamps.length < 3) return null;
 
     // ⏰ ตั้งเวลา reset ที่เที่ยงคืนวันถัดไป
     const now = new Date();
@@ -242,7 +242,7 @@ const Main = () => {
 
   const canRunTest = () => {
     const timestamps = JSON.parse(localStorage.getItem(getTodayKey()) || "[]");
-    return timestamps.length < 1000;
+    return timestamps.length < 3;
   };
 
   const recordRun = () => {
