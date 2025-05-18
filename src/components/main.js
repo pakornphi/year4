@@ -203,7 +203,6 @@ const Main = () => {
       toolbox: `
         <xml>
           <block type="set_url"></block>
-          <block type="add_url"></block>
           <block type="check_sql_injection"></block>
           <block type="check_xss"></block>
           <block type="check_csrf"></block>

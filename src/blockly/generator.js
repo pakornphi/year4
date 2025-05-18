@@ -4,19 +4,11 @@ import { javascriptGenerator } from "blockly/javascript";
 // ✅ set_url
 javascriptGenerator.forBlock["set_url"] = function (block) {
   const mainUrl = `"${block.getFieldValue("URL")}"`;
-  let extraUrls = javascriptGenerator.statementToCode(block, "MORE_URLS").trim();
-
-  if (extraUrls) {
-    extraUrls = extraUrls
-      .split("\n")
-      .filter(line => line.trim() !== "")
-      .join(", ");
-  }
 
   const securityTests = javascriptGenerator.statementToCode(block, "SECURITY_TESTS");
 
   return `
-    const urls = [${mainUrl}${extraUrls ? `, ${extraUrls}` : ""}];
+    const urls = [${mainUrl}];
 
     urls.forEach(url => {
       ${securityTests}
@@ -25,10 +17,10 @@ javascriptGenerator.forBlock["set_url"] = function (block) {
 };
 
 // ✅ add_url
-javascriptGenerator.forBlock["add_url"] = function (block) {
-  const url = `"${block.getFieldValue("URL")}"`;
-  return `${url},\n`;
-};
+// javascriptGenerator.forBlock["add_url"] = function (block) {
+//   const url = `"${block.getFieldValue("URL")}"`;
+//   return `${url},\n`;
+// };
 
 // ✅ SQL Injection
 javascriptGenerator.forBlock["check_sql_injection"] = function () {
@@ -60,42 +52,55 @@ javascriptGenerator.forBlock["check_sql_injection"] = function () {
 // ✅ XSS
 javascriptGenerator.forBlock["check_xss"] = function () {
   return `
-  fetch("http://localhost:5000/api/test-xss", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url })
-  })
-  .then(response => response.json())
-  .then(data => {
-    const results = data?.results || {};
-    const entry = { tested_url: url };
-
-    Object.entries(results).forEach(([key, value]) => {
-      if (key === "vulnerability") return;
-      entry[\`test_\${key}\`] = {
-        info: value.payloads?.[0] || null,
-        vulnerability: value.count > 0
+    fetch("http://localhost:5000/api/test-xss", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url })
+    })
+    .then(response => response.json())
+    .then(data => {
+      const entry = {
+        tested_url: data.tested_url,
+        xss_vulnerable: false,
+        messages: data.results || []
       };
+
+      // ดึงค่า test_xxx ออกมาเก็บใน entry ให้ Dashboard อ่านได้
+      (data.results || []).forEach((line) => {
+        const match = line.match(/^\\s*(.+?)\\s+→ vulnerability:(True|False|None)/);
+        if (match) {
+          const label = match[1].trim().toLowerCase().replace(/\\s+/g, "_"); // เช่น: "form_input_xss"
+          const key = "test_" + label;
+          const vuln = match[2] === "True" ? true : match[2] === "False" ? false : null;
+
+          entry[key] = {
+            vulnerability: vuln,
+            info: null
+          };
+
+          if (vuln === true) {
+            entry.xss_vulnerable = true;
+          }
+        }
+      });
+
+      let allResults = JSON.parse(localStorage.getItem("xssResults") || "[]");
+      const index = allResults.findIndex(r => r.tested_url === entry.tested_url);
+      if (index !== -1) {
+        allResults[index] = { ...allResults[index], ...entry };
+      } else {
+        allResults.push(entry);
+      }
+
+      localStorage.setItem("xssResults", JSON.stringify(allResults));
+      console.log("✅ Saved XSS results for", url);
+    })
+    .catch(error => {
+      console.error("❌ Failed to test XSS:", error);
     });
-
-    entry["xss_vulnerable"] = results.vulnerability ?? null;
-
-    let allResults = JSON.parse(localStorage.getItem("xssResults") || "[]");
-    const index = allResults.findIndex(r => r.tested_url === url);
-    if (index !== -1) {
-      allResults[index] = { ...allResults[index], ...entry };
-    } else {
-      allResults.push(entry);
-    }
-
-    localStorage.setItem("xssResults", JSON.stringify(allResults));
-    console.log("✅ Saved structured XSS results for", url);
-  })
-  .catch(error => {
-    console.error("❌ Failed to test XSS:", error);
-  });
   `;
 };
+
 
 
 
@@ -164,9 +169,6 @@ javascriptGenerator.forBlock["check_idor"] = function () {
   `;
 };
 
-
-
-
 // ✅ BAC
 javascriptGenerator.forBlock["check_bac"] = function () {
   return `
@@ -177,19 +179,28 @@ javascriptGenerator.forBlock["check_bac"] = function () {
     })
     .then(response => response.json())
     .then(data => {
-      const result = {
+      const entry = {
+        url: data.tested_url,
         tested_url: data.tested_url,
-        results: data.results || []  // ✅ ต้องเป็น array of strings
+        bac_vulnerable: data.report.some(line => line.includes("vulnerability:True")),
+        messages: data.report || []
       };
 
       let allResults = JSON.parse(localStorage.getItem("bacResults") || "[]");
-      allResults.push(result);
+      const index = allResults.findIndex(r => r.tested_url === data.tested_url);
+      if (index !== -1) {
+        allResults[index] = { ...allResults[index], ...entry };
+      } else {
+        allResults.push(entry);
+      }
+
       localStorage.setItem("bacResults", JSON.stringify(allResults));
-      console.log("✅ Saved BAC results for", url);
+      console.log("✅ Saved BAC results for", data.tested_url);
     })
     .catch(error => {
       console.error("❌ Failed to test BAC:", error);
     });
   `;
 };
+
 

@@ -6,9 +6,24 @@ from sql import SQLInjectionTester  # Import SQLInjectionTester from sql.py
 import logging
 from BAC import BrokenAccessControlTester  # Import the BrokenAccessControlTester from BAC.py
 from Idor import IDORSummarizedTester  # ← เพิ่มส่วน import นี้
+import os
+import importlib.util
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend-backend communication
+
+
+def load_payloads_from_py(path: str = 'payloads.py') -> list[str]:
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"{path} does not exist")
+    spec = importlib.util.spec_from_file_location("payloads_module", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    if not hasattr(mod, 'PAYLOADS'):
+        raise AttributeError(f"No PAYLOADS in {path}")
+    return getattr(mod, 'PAYLOADS')
+
 
 # CSRF Tester class is used in this route
 @app.route('/api/test-csrf', methods=['POST'])
@@ -40,47 +55,51 @@ def test_csrf():
 # XSS Tester class is used in this route
 @app.route('/api/test-xss', methods=['POST'])
 def test_xss():
-    data = request.get_json()
+    data = request.get_json(force=True)
     target_url = data.get('url')
-    print(f"✅ /api/test-xss called for: {target_url}")
-
     if not target_url:
         return jsonify({'error': 'URL is required'}), 400
 
     try:
-        # ✅ ระบุ payload.txt ไว้ตรงนี้โดยตรง
+        # 1) load payloads
+        payloads = load_payloads_from_py('payloads.py')
+
+        # 2) run the tester (now returns a dict)
         tester = XSSTester(
             base_url=target_url,
-            payload_file='payload.txt',   # ← อย่าลืมให้ไฟล์นี้อยู่ใน backend folder
+            payloads=payloads,
             timeout=3,
             cooldown=0.5,
             workers=10
         )
+        raw_results = tester.run_all()   # dict: { test_name: [hits…], … }
 
-        raw_results = tester.run_all()
-        print(f"📦 Raw Results: {raw_results}")
-
-        # ✅ แปลง raw_results เป็นโครงสร้าง JSON ที่ dashboard ใช้ได้
-        results = {
-            name: {
-                'count': count,
-                'payloads': []  # หรือใส่ actual payload ถ้ามี logic
-            }
-            for name, count in raw_results.items()
-            if name != 'vulnerability'
+        # 3) build the lines array
+        labels = {
+            'test_query_parameter_xss': 'Query Parameter XSS',
+            'test_form_input_xss':      'Form Input XSS',
+            'test_header_xss':          'Header XSS',
+            'test_comment_xss':         'Comment Field XSS',
+            'test_profile_field_xss':   'Profile Field XSS',
+            'test_file_upload_xss':     'File Upload XSS',
         }
 
-        results['vulnerability'] = raw_results.get('vulnerability', False)
+        lines = []
+        for test_name, hits in raw_results.items():
+            label = labels.get(test_name, test_name).ljust(30)
+            # use None if you want “vulnerability:None” when no verdict,
+            # or boolean if you prefer True/False
+            vuln = None if hits is None else bool(hits)
+            lines.append(f"{label} → vulnerability:{vuln}")
 
-        return jsonify({'results': results}), 200
+        return jsonify({
+            "tested_url": target_url,
+            "results": lines
+        }), 200
 
     except Exception as e:
-        print(f"❌ XSS test failed: {e}")
-        return jsonify({'error': f'XSS test failed: {str(e)}'}), 500
+        return jsonify({'error': f'XSS test failed: {e}'}), 500
 
-
-
-# SQL Injection Tester class is used in this route
 
 @app.route('/api/test-sql', methods=['POST'])
 def test_sql_injection():
@@ -122,7 +141,6 @@ def test_sql_injection():
 def test_broken_access_control():
     data = request.get_json()
     target_url = data.get('url')
-
     if not target_url:
         return jsonify({'error': 'URL is required'}), 400
 
@@ -130,18 +148,16 @@ def test_broken_access_control():
         tester = BrokenAccessControlTester(base_url=target_url)
         raw_results = tester.run_all()
 
-        formatted = []
+        # 🔧 เปลี่ยน format ของ report ให้เป็นแบบที่คุณต้องการ
+        summary_lines = []
         for name, details in raw_results.items():
-            if isinstance(details, list):
-                count = sum(1 for d in details if d[0] is True)
-                status = "True" if count > 0 else "False"
-                formatted.append(f"{name:30s} → vulnerability:{status}")
-                for d in details:
-                    formatted.append(f"    {d[1]}")
+            count = sum(1 for ok, _ in details if ok)
+            status = "True" if count > 0 else "False"
+            summary_lines.append(f"{name:35s}vulnerability:{status}")
 
         return jsonify({
             "tested_url": target_url,
-            "results": formatted  # ✅ ชัดเจนเลย
+            "report": summary_lines
         }), 200
 
     except Exception as e:

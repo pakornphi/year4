@@ -14,99 +14,69 @@ import html2canvas from "html2canvas";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [resultsByUrl, setResultsByUrl] = useState({});
   const [selectedUrl, setSelectedUrl] = useState("");
-  const [chartData, setChartData] = useState([]);
+  const [results, setResults] = useState({});
+  const COLORS = ["#f87171", "#4ade80"];
 
-  const mergeResults = (...arrays) => {
-    const merged = {};
-    arrays.flat().forEach((entry) => {
-      const url = entry.tested_url || entry.url;
-      const messages = [];
-
-      // ✅ รองรับแบบ result.results เป็น array ของ string
-      if (Array.isArray(entry.results)) {
-        messages.push(...entry.results);
-      }
-
-      if (Array.isArray(entry.messages)) {
-        messages.push(...entry.messages);
-      }
-
-      if ("xss_vulnerable" in entry)
-        messages.push(`(XSS) xss_vulnerable: ${entry.xss_vulnerable}`);
-      if ("csrf_vulnerable" in entry)
-        messages.push(`(CSRF) csrf_vulnerable: ${entry.csrf_vulnerable}`);
-      if ("idor_vulnerable" in entry)
-        messages.push(`(IDOR) idor_vulnerable: ${entry.idor_vulnerable}`);
-      if ("bac_vulnerable" in entry)
-        messages.push(`(BAC) bac_vulnerable: ${entry.bac_vulnerable}`);
-      if ("vulnerable" in entry)
-        messages.push(`(SQL) vulnerable: ${entry.vulnerable}`);
-
-      Object.entries(entry).forEach(([key, value]) => {
-        if (key.startsWith("test_") && typeof value === "object") {
-          const status =
-            value.vulnerability === true
-              ? "True"
-              : value.vulnerability === false
-              ? "False"
-              : "None";
-          messages.push(`(CSRF) ${key}: ${status}`);
-        }
-      });
-
-      if (!merged[url]) merged[url] = [];
-      merged[url].push(...messages);
-    });
-    return merged;
-  };
+  const categoryKeys = [
+    "xssResults",
+    "csrfResults",
+    "sqlResults",
+    "idorResults",
+    "bacResults",
+  ];
 
   useEffect(() => {
-    const xss = JSON.parse(localStorage.getItem("xssResults") || "[]");
-    const csrf = JSON.parse(localStorage.getItem("csrfResults") || "[]");
-    const sql = JSON.parse(localStorage.getItem("sqlResults") || "[]");
-    const idor = JSON.parse(localStorage.getItem("idorResults") || "[]");
-    const bac = JSON.parse(localStorage.getItem("bacResults") || "[]");
+    const data = {};
+    categoryKeys.forEach((key) => {
+      const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+      parsed.forEach((entry) => {
+        const url = entry.tested_url || entry.url;
+        if (!data[url]) data[url] = {};
+        data[url][key] = entry;
+      });
+    });
 
-    const grouped = mergeResults(xss, csrf, sql, idor, bac);
-    setResultsByUrl(grouped);
+    setResults(data);
 
-    const firstUrl = Object.keys(grouped)[0];
-    setSelectedUrl(firstUrl || "");
-
-    if (grouped[firstUrl]) {
-      updateChartData(grouped[firstUrl]);
-    }
+    const firstUrl = Object.keys(data)[0];
+    if (firstUrl) setSelectedUrl(firstUrl);
   }, []);
 
-  const updateChartData = (messages) => {
+  const generateChartData = (entry) => {
     let trueCount = 0;
     let falseCount = 0;
 
-    messages.forEach((msg) => {
-      if (msg.includes("vulnerability:True")) trueCount++;
-      else if (msg.includes("vulnerability:False")) falseCount++;
+    Object.entries(entry).forEach(([k, v]) => {
+      if (typeof v === "object" && v !== null && "vulnerability" in v) {
+        if (v.vulnerability === true) trueCount++;
+        else if (v.vulnerability === false) falseCount++;
+      } else if (typeof v === "boolean") {
+        v ? trueCount++ : falseCount++;
+      } else if (typeof v === "string") {
+        const lower = v.toLowerCase();
+        if (lower.includes("vulnerability:true")) trueCount++;
+        else if (lower.includes("vulnerability:false")) falseCount++;
+      } else if (Array.isArray(v)) {
+        // หากเป็น array ของ string เช่น ['... → vulnerability:True']
+        v.forEach((line) => {
+          const lower = line.toLowerCase();
+          if (lower.includes("vulnerability:true")) trueCount++;
+          else if (lower.includes("vulnerability:false")) falseCount++;
+        });
+      }
     });
 
-    setChartData([
-      { name: "Vulnerable", value: trueCount, color: "#f87171" },
-      { name: "Safe", value: falseCount, color: "#4ade80" },
-    ]);
+    return [
+      { name: "Vulnerable", value: trueCount, color: COLORS[0] },
+      { name: "Safe", value: falseCount, color: COLORS[1] },
+    ];
   };
 
   const clearResults = () => {
-    [
-      "xssResults",
-      "csrfResults",
-      "sqlResults",
-      "idorResults",
-      "bacResults",
-    ].forEach((key) => localStorage.removeItem(key));
-
-    setResultsByUrl({});
+    categoryKeys.forEach((key) => localStorage.removeItem(key));
+    setResults({});
     setSelectedUrl("");
-    setChartData([]);
   };
 
   const exportPDF = () => {
@@ -114,12 +84,7 @@ const Dashboard = () => {
 
     html2canvas(input).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const imgProps = pdf.getImageProperties(imgData);
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
@@ -133,14 +98,11 @@ const Dashboard = () => {
     <div className="dashboard-layout">
       <div className="sidebar">
         <h3>🔗 URLs</h3>
-        {Object.keys(resultsByUrl).map((url) => (
+        {Object.keys(results).map((url) => (
           <button
             key={url}
             className={`url-button ${url === selectedUrl ? "active" : ""}`}
-            onClick={() => {
-              setSelectedUrl(url);
-              updateChartData(resultsByUrl[url]);
-            }}
+            onClick={() => setSelectedUrl(url)}
           >
             {url}
           </button>
@@ -157,39 +119,68 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {selectedUrl && resultsByUrl[selectedUrl]?.length > 0 ? (
-          <div className="result-card full">
-            <h3 className="vuln-heading">{selectedUrl}</h3>
+        {selectedUrl && results[selectedUrl] ? (
+          categoryKeys.map((key) => {
+            const entry = results[selectedUrl][key];
+            if (!entry) return null;
 
-            <div style={{ width: "100%", height: 280, marginBottom: 20 }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={90}
-                    label={({ name, percent }) =>
-                      `${name} ${(percent * 100).toFixed(0)}%`
+            const chartData = generateChartData(entry);
+            const lines = [];
+                  Object.entries(entry).forEach(([field, value]) => {
+                    if (field === "url" || field === "tested_url") return;
+                    if (field.startsWith("test_")) return; // ✅ ข้าม internal field เช่น test_*
+
+                    if (field === "xss_vulnerable" || field.endsWith("_vulnerable")) {
+                      lines.push(`${field} → vulnerability:${value}`);
+                      return;
                     }
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={index} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
 
-            <pre className="vuln-pre">
-              {resultsByUrl[selectedUrl].join("\n")}
-            </pre>
-          </div>
+                    if (typeof value === "object" && value !== null && "vulnerability" in value) {
+                      lines.push(`${field} → vulnerability:${value.vulnerability}`);
+                      if (value.info && value.info !== "/" && value.info !== null) {
+                        lines.push(`info=${JSON.stringify(value.info)}`);
+                      }
+                    } else if (typeof value === "boolean") {
+                      lines.push(`${field} → vulnerability:${value}`);
+                    } else if (Array.isArray(value)) {
+                      value.forEach((v) => lines.push(v));
+                    } else if (typeof value === "string" && field.includes("vulnerable")) {
+                      lines.push(`${field} → vulnerability:${value}`);
+                    }
+                  });
+            return (
+              <div key={key} className="vuln-section">
+                <h3 className="vuln-heading">{key.replace("Results", "").toUpperCase()}</h3>
+
+                <div style={{ width: "100%", height: 280, marginBottom: 20 }}>
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={90}
+                        label={({ name, percent }) =>
+                          `${name} ${(percent * 100).toFixed(0)}%`
+                        }
+                      >
+                        {chartData.map((entry, index) => (
+                          <Cell key={index} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <pre className="vuln-pre">{lines.join("\n")}</pre>
+              </div>
+            );
+          })
         ) : (
           <p className="no-results">⚠️ No results available for this URL.</p>
         )}

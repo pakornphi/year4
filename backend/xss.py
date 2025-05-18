@@ -14,17 +14,18 @@ logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 
 class XSSTester:
     """
-    XSS testing toolkit that reads its payloads from Python files,
+    XSS testing toolkit that reads its payloads from Python files or a provided list,
     caches fetched pages, and runs tests in parallel.
     """
     def __init__(
         self,
-        base_url,
-        payload_file,
-        timeout=5,
-        cooldown=1,
-        max_redirects=0,
-        workers=5
+        base_url: str,
+        payload_file: str = None,
+        payloads: list[str] = None,
+        timeout: float = 5,
+        cooldown: float = 1,
+        max_redirects: int = 0,
+        workers: int = 5
     ):
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
@@ -32,12 +33,19 @@ class XSSTester:
         self.workers = workers
         self._soup_cache = {}
 
-        # Load payloads from the given file
-        self.payloads = self._read_payloads(payload_file)
+        # Allow either a direct list or a file on disk
+        if payloads is not None:
+            self.payloads = payloads
+            logging.info(f"Loaded {len(self.payloads)} payloads from provided list")
+        elif payload_file:
+            self.payloads = self._read_payloads(payload_file)
+            logging.info(f"Loaded {len(self.payloads)} payloads from '{payload_file}'")
+        else:
+            self.payloads = []
+            logging.info("No payloads provided; running with an empty list")
 
         # Load DOM-specific payloads from 'payloaddom.txt'
-        self.dom_payloads = self._read_payloads('payloaddom.txt')  # Fixed file name
-        logging.info(f"Loaded {len(self.payloads)} payloads from '{payload_file}'")
+        self.dom_payloads = self._read_payloads('payloaddom.txt')
         logging.info(f"Loaded {len(self.dom_payloads)} DOM payloads from 'payloaddom.txt'")
 
         # Configure session with increased pool size
@@ -84,7 +92,6 @@ class XSSTester:
             self._sleep()
 
     def _fetch_soup(self, url):
-        # Cache by URL to avoid repeated fetches
         if url in self._soup_cache:
             return self._soup_cache[url]
         try:
@@ -154,8 +161,7 @@ class XSSTester:
                     data[name] = self.payload
                     found = True
                 else:
-                    data[name] = (field.get('value', '')
-                                  if field.name == 'input' else field.text)
+                    data[name] = (field.get('value', '') if field.name == 'input' else field.text)
             if not found:
                 continue
             if form.get('method', 'get').lower() == 'post':
@@ -182,8 +188,7 @@ class XSSTester:
                     data[name] = self.payload
                     found = True
                 else:
-                    data[name] = (field.get('value', '')
-                                  if field.name == 'input' else field.text)
+                    data[name] = (field.get('value', '') if field.name == 'input' else field.text)
             if not found:
                 continue
             if form.get('method', 'get').lower() == 'post':
@@ -225,9 +230,10 @@ class XSSTester:
         self.payload = payload
         return method()
 
-    def run_all(self, max_workers=None):
+    def run_all(self, max_workers=None) -> dict:
         """
-        Run each test_* method in parallel across payloads.
+        Run each test_* method in parallel across payloads, then
+        return a dict mapping each test name to the list of successful payloads.
         """
         results = {}
         methods = [
@@ -251,32 +257,35 @@ class XSSTester:
         results['vulnerability'] = any(
             results[test] for test in results if test != 'vulnerability'
         )
+
+        # Format and return the summary string
         return results
 
     def print_results(self, results):
         """
-        Display the results of the XSS testing in a formatted way.
+        Display the formatted summary (same as run_all() returns).
         """
-        # Print the URL being tested
-        print(f"Testing URL: {self.base_url}")
+        print(self._format_results(results))
 
-        # Define the order and labels for the tests
+    def _format_results(self, results) -> str:
+        """
+        Build and return the multi-line summary report.
+        """
+        lines = [f"Testing URL: {self.base_url}"]
         tests = [
-                ('test_query_parameter_xss', 'Query Parameter XSS'),
-                ('test_form_input_xss', 'Form Input XSS'),
-                ('test_header_xss', 'Header XSS'),
-                ('test_comment_xss', 'Comment Field XSS'),
-                ('test_profile_field_xss', 'Profile Field XSS'),
-                ('test_file_upload_xss', 'File Upload XSS'),
-            ]
-
-            # Print each test result with aligned formatting
+            ('test_query_parameter_xss', 'Query Parameter XSS'),
+            ('test_form_input_xss',      'Form Input XSS'),
+            ('test_header_xss',          'Header XSS'),
+            ('test_comment_xss',         'Comment Field XSS'),
+            ('test_profile_field_xss',   'Profile Field XSS'),
+            ('test_file_upload_xss',     'File Upload XSS'),
+        ]
         for key, label in tests:
             vuln_list = results.get(key, [])
             status = 'True' if vuln_list else 'False'
             count = len(vuln_list)
-            print(f"  {label:<28} → vulnerability:{status:<5} count={count}")
-
+            lines.append(f"  {label:<28} → vulnerability:{status:<5} count={count}")
+        return "\n".join(lines)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="XSS Testing Script")
@@ -298,5 +307,5 @@ if __name__ == '__main__':
         cooldown=args.cooldown,
         workers=args.workers
     )
-    results = tester.run_all(max_workers=args.workers)
-    tester.print_results(results)
+    summary = tester.run_all(max_workers=args.workers)
+    print(summary)

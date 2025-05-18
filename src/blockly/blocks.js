@@ -6,9 +6,9 @@ Blockly.Blocks["set_url"] = {
     this.appendDummyInput()
       .appendField("Test Website URL:")
       .appendField(new Blockly.FieldTextInput(""), "URL"); // ✅ ให้ผู้ใช้กำหนดเอง
-    this.appendStatementInput("MORE_URLS") // ✅ เพิ่มการรองรับ URL หลายอัน
-      .setCheck("String")
-      .appendField("Add More URLs");
+    // this.appendStatementInput("MORE_URLS") // ✅ เพิ่มการรองรับ URL หลายอัน
+    //   .setCheck("String")
+    //   .appendField("Add More URLs");
     this.appendStatementInput("SECURITY_TESTS")
       .setCheck(null)
       .appendField("Run Security Tests");
@@ -18,17 +18,19 @@ Blockly.Blocks["set_url"] = {
 };
 
 // ✅ Block เพิ่ม URL เพิ่มเติม
-Blockly.Blocks["add_url"] = {
-  init: function () {
-    this.appendDummyInput()
-      .appendField("Add URL:")
-      .appendField(new Blockly.FieldTextInput(""), "URL");
-    this.setPreviousStatement(true, "String");
-    this.setNextStatement(true, "String");
-    this.setColour(160);
-    this.setTooltip("เพิ่มที่อยู่เว็บไซต์ (URL) ที่ต้องการทดสอบ");
-  },
-};
+// Blockly.Blocks["add_url"] = {
+//   init: function () {
+//     this.appendDummyInput()
+//       .appendField("Add URL:")
+//       .appendField(new Blockly.FieldTextInput(""), "URL");
+//       this.setHidden(true);
+//     this.setPreviousStatement(true, "String");
+//     this.setNextStatement(true, "String");
+//     this.setColour(160);
+//     this.setTooltip("เพิ่มที่อยู่เว็บไซต์ (URL) ที่ต้องการทดสอบ");
+    
+//   },
+// };
 
 // ✅ Block ตรวจสอบ SQL Injection
 Blockly.Blocks["check_sql_injection"] = {
