@@ -28,3 +28,4 @@ backend/__pycache__/csrf2.cpython-39.pyc
 backend/__pycache__/Idor.cpython-39.pyc
 backend/__pycache__/sql.cpython-39.pyc
 backend/__pycache__/xss.cpython-39.pyc
+websitetarget/sql/test.db
