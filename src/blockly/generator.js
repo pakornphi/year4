@@ -25,7 +25,7 @@ javascriptGenerator.forBlock["set_url"] = function (block) {
 // ✅ SQL Injection
 javascriptGenerator.forBlock["check_sql_injection"] = function () {
   return `
-    fetch("http://localhost:5000/api/test-sql", {
+    fetch("https://vast-sound-sunbird.ngrok-free.app/api/test-sql", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url })
@@ -52,7 +52,7 @@ javascriptGenerator.forBlock["check_sql_injection"] = function () {
 // ✅ XSS
 javascriptGenerator.forBlock["check_xss"] = function () {
   return `
-    fetch("http://localhost:5000/api/test-xss", {
+    fetch("https://vast-sound-sunbird.ngrok-free.app/api/test-xss", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url })
@@ -108,7 +108,7 @@ javascriptGenerator.forBlock["check_xss"] = function () {
 javascriptGenerator.forBlock["check_csrf"] = function () {
   return `
     urls.forEach(url => {
-      fetch("http://localhost:5000/api/test-csrf", {
+      fetch("https://vast-sound-sunbird.ngrok-free.app/api/test-csrf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url })
@@ -135,7 +135,7 @@ javascriptGenerator.forBlock["check_csrf"] = function () {
 // ✅ IDOR
 javascriptGenerator.forBlock["check_idor"] = function () {
   return `
-    fetch("http://localhost:5000/api/test-idor", {
+    fetch("https://vast-sound-sunbird.ngrok-free.app/api/test-idor", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url })
@@ -172,7 +172,7 @@ javascriptGenerator.forBlock["check_idor"] = function () {
 // ✅ BAC
 javascriptGenerator.forBlock["check_bac"] = function () {
   return `
-    fetch("http://localhost:5000/api/test-broken-access-control", {
+    fetch("https://vast-sound-sunbird.ngrok-free.app/api/test-broken-access-control", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url })

@@ -51,7 +51,14 @@ def test_csrf():
         "results": formatted   # ✅ list[string]
     }), 200
 
+# @app.before_request
+# def limit_to_localtunnel():
+#     origin = request.headers.get("Origin") or ""
+#     host = request.host or ""
 
+#     if "loca.lt" not in origin and "loca.lt" not in host:
+#         return jsonify({"error": "❌ Access allowed only via loca.lt domain"}), 403
+    
 # XSS Tester class is used in this route
 @app.route('/api/test-xss', methods=['POST'])
 def test_xss():

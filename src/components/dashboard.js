@@ -9,8 +9,10 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import "./dashboard.css";
-import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+
+
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -79,20 +81,47 @@ const Dashboard = () => {
     setSelectedUrl("");
   };
 
-  const exportPDF = () => {
-    const input = document.querySelector(".dashboard-main");
+const exportPDF = () => {
+  const input = document.querySelector(".dashboard-main");
 
-    html2canvas(input).then((canvas) => {
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+  const originalHeight = input.style.height;
 
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save("vulnerability-report.pdf");
-    });
-  };
+  // 1️⃣ บังคับให้ขยาย element ให้สูงสุดก่อนแคป
+  input.style.height = input.scrollHeight + "px";
+
+  html2canvas(input, {
+    scrollY: -window.scrollY,
+    useCORS: true,
+  }).then((canvas) => {
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    // 2️⃣ คืนค่าเดิม
+    input.style.height = originalHeight;
+
+    pdf.save("vulnerability-report.pdf");
+  });
+};
+
 
   return (
     <div className="dashboard-layout">
@@ -116,6 +145,8 @@ const Dashboard = () => {
             <button onClick={() => navigate("/main")}>⬅️ Back</button>
             <button onClick={clearResults}>🗑️ Clear</button>
             <button onClick={exportPDF}>📄 Export PDF</button>
+
+
           </div>
         </div>
 
@@ -127,7 +158,10 @@ const Dashboard = () => {
             const chartData = generateChartData(entry);
             const lines = [];
                   Object.entries(entry).forEach(([field, value]) => {
-                    if (field === "url" || field === "tested_url") return;
+                    if (field === "url" || field === "tested_url" || field === "xss_vulnerable" ||
+                    field === "idor_vulnerable"
+                    ||field === "bac_vulnerable"
+                    ) return;
                     if (field.startsWith("test_")) return; // ✅ ข้าม internal field เช่น test_*
 
                     if (field === "xss_vulnerable" || field.endsWith("_vulnerable")) {
