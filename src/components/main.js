@@ -173,6 +173,7 @@ const Main = () => {
   const [username, setUsername] = useState("");
 
   useEffect(() => {
+    
     const storedUsername = localStorage.getItem("username");
     if (storedUsername) setUsername(storedUsername);
 
@@ -226,7 +227,7 @@ const Main = () => {
 
     const getRemainingTimeMessage = () => {
     const timestamps = JSON.parse(localStorage.getItem(getTodayKey()) || "[]");
-    if (timestamps.length < 3) return null;
+    if (timestamps.length < 1000) return null;
 
     // ⏰ ตั้งเวลา reset ที่เที่ยงคืนวันถัดไป
     const now = new Date();
@@ -242,7 +243,7 @@ const Main = () => {
 
   const canRunTest = () => {
     const timestamps = JSON.parse(localStorage.getItem(getTodayKey()) || "[]");
-    return timestamps.length < 3;
+    return timestamps.length < 1000;
   };
 
   const recordRun = () => {
@@ -281,7 +282,12 @@ const Main = () => {
       alert("⚠️ You must set a URL before generating code.");
       return;
     }
-
+    const setUrlBlock = allBlocks.find(b => b.type === "set_url");
+    // const urlValue = setUrlBlock?.getFieldValue("URL") || "";
+    // if (!/^https:\/\/.*\.loca\.lt/.test(urlValue)) {
+    //   alert("❌ Only loca.lt URLs are allowed. Please enter a valid https://xxxx.loca.lt URL.");
+    //   return;
+    // }
     if (resultKeysToCheck.length === 0) {
       alert("⚠️ Please add at least one security check before generating code.");
       return;

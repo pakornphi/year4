@@ -14,7 +14,7 @@ const Login = () => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8000/api/auth/login", {
+      const response = await fetch("https://f80c-182-232-177-92.ngrok-free.app/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
