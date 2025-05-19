@@ -96,4 +96,4 @@ def login_json():
 
 if __name__ == '__main__':
     # To test: run this app, then visit http://localhost:5000/init first.
-    app.run(debug=True)
+    app.run(debug=True , port=2000)
