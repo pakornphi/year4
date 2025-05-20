@@ -170,24 +170,46 @@ class CSRFTester:
         return True, None
 
     def test_expiration(self, wait: int = 5):
-        """Reusing token after wait => vulnerability."""
+        """Reusing token after wait ⇒ vulnerability."""
+        # 1. Load the page and find the first form
         html = self._get('/').text
-        action, method, data = self._extract_fields(self._find_forms(html)[0])
-        token = data.get(self.csrf_field)
-        if method == 'post':
-            self._post(action, data)
-        else:
-            self._get(action, params=data)
-        time.sleep(wait)
+        forms = self._find_forms(html)
+        if not forms:
+            return False
+
+        # 2. Extract action, method and data
         try:
-            if method == 'post':
+            action, method, data = self._extract_fields(forms[0])
+        except Exception as e:
+            return False, f"parse-error:{e}"
+
+        # 3. Perform the initial valid submission
+        try:
+            if method.lower() == 'post':
                 self._post(action, data)
             else:
                 self._get(action, params=data)
-            return True, token
-        except:
-            return False, token
+        except Exception as e:
+            return False, f"initial-submit-failed:{e}"
 
+        # 4. Wait for the token to expire
+        time.sleep(wait)
+
+        # 5. Attempt to reuse the (now-stale) token
+        try:
+            if method.lower() == 'post':
+                self._post(action, data)
+            else:
+                self._get(action, params=data)
+            # Vulnerability if server still accepts the stale token
+            return True, None
+        except requests.exceptions.HTTPError as he:
+            # Expected HTTP error means token expired correctly
+            return False, f"http-error:{he.response.status_code}"
+        except Exception as e:
+            # Any other error ⇒ treat as non-vuln but report why
+            return False, f"reuse-error:{e}"
+        
     def test_session_fixation(self):
         """Session must rotate on login; treat 404/405 as protected."""
         orig = self.session.cookies.get('session')
