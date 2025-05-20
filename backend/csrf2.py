@@ -175,7 +175,7 @@ class CSRFTester:
         html = self._get('/').text
         forms = self._find_forms(html)
         if not forms:
-            return False
+            return False, forms
 
         # 2. Extract action, method and data
         try:
