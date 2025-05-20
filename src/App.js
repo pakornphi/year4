@@ -1,18 +1,21 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./components/login";
 import Register from "./components/register";
 import Main from "./components/main";
 import Dashboard from "./components/dashboard";
-import ProtectedRoute from "./components/ProtectedRoute"; // ✅ เพิ่ม
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
     <Router>
       <Routes>
+        {/* เมื่อเข้า "/" จะรีไดเรกต์ไป /login ทันที */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
-        {/* ✅ ต้อง login ก่อนถึงเข้าได้ */}
+        {/* ต้อง login ก่อนถึงเข้าได้ */}
         <Route
           path="/main"
           element={
@@ -30,7 +33,8 @@ function App() {
           }
         />
 
-        <Route path="/" element={<h1>Welcome! Please <a href="/login">Login</a></h1>} />
+        {/* Optional: ถ้าพิมพ์ URL ผิดหรือไม่ตรงกับข้างบน ให้รีไดเรกต์กลับไป login */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );
